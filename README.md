@@ -32,3 +32,8 @@ Otherwise, the function fails with a revert statement.
 The predicate function is built using Rust, which is a compiled systems programming language that provides low-level control over memory management and is known for its strong type system and memory safety. Rust code can be compiled to run on a variety of platforms, including desktop computers, servers, and embedded devices, as well as blockchain platforms like Ethereum and Solana. The Rust code is likely deployed to the blockchain as part of a larger smart contract that uses the predicate function to enforce more complex rules or business logic.
 
 This predicate code is brand new and has never been seen on GitHub before. It is highly efficient as it maintains price tokens instead of token parameters, while still retaining the same predicate root. This makes the solution much more stable for partial fulfillment.
+
+
+
+<img width="1158" alt="image" src="https://github.com/compolabs/ethglobal-predicate/assets/52199564/c17419e6-3325-4c64-bbc4-3a3dd314325e">
+
