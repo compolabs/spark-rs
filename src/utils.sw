@@ -4,15 +4,15 @@ use std::constants::ZERO_B256;
 ////////////
 // Inuput //
 ////////////
-const GTF_INPUT_COIN_AMOUNT = 0x105;
+// const GTF_INPUT_COIN_AMOUNT = 0x105;
 const GTF_INPUT_COIN_ASSET_ID = 0x106;
 
 pub fn input_coin_asset_id(index: u64) -> b256 {
     __gtf::<b256>(index, GTF_INPUT_COIN_ASSET_ID)
 }
-pub fn input_coin_amount(index: u64) -> u64 {
-    __gtf::<u64>(index, GTF_INPUT_COIN_AMOUNT)
-}
+// pub fn input_coin_amount(index: u64) -> u64 {
+//     __gtf::<u64>(index, GTF_INPUT_COIN_AMOUNT)
+// }
 
 
 ////////////

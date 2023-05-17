@@ -18,7 +18,13 @@ use crate::utils::{
 };
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Bob wants to exchange 200 UNI for 1000 USDC
-
+/*
+inputs
+   ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, owner: Predicate, status: Unspent }}
+outputs
+   Coin { to: Alice, amount: 0, asset_id: USDC }
+   Change { to: Alice, amount: 0, asset_id: USDC }
+ */
 #[tokio::test]
 async fn cancel_order_test() {
     print_title("Cancel Order Test");
@@ -39,8 +45,8 @@ async fn cancel_order_test() {
 
     let amount0 = 1000_000_000_u64; //1000 USDC
     let amount1 = 200_000_000_000_u64; //200 UNI
-    println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id.to_string());
-    println!("UNI AssetId (asset1) = 0x{:?}", uni.asset_id.to_string());
+    println!("USDC AssetId (asset0) = {:?}", usdc.asset_id.to_string());
+    println!("UNI AssetId (asset1) = {:?}", uni.asset_id.to_string());
     println!("amount0 = {:?} USDC", amount0 / 1000_000);
     println!("amount1 = {:?} UNI\n", amount1 / 1000_000_000);
 
@@ -64,6 +70,7 @@ async fn cancel_order_test() {
     let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
         .unwrap()
         .with_configurables(configurables);
+    println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
     create_order(&alice, &predicate, &usdc_instance, amount0)

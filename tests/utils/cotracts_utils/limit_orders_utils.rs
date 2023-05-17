@@ -38,7 +38,6 @@ pub mod limit_orders_interactions {
             .unwrap();
 
         let outputs = wallet.get_asset_outputs_for_amount(wallet.address(), asset0, 0);
-
         let script_call = ScriptCallHandler::new(
             vec![],
             UnresolvedBytes::default(),

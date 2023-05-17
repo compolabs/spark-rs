@@ -11,7 +11,25 @@ use crate::utils::{get_balance, local_tests_utils::*, print_title};
 
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Bob wants to exchange 200 UNI for 1000 USDC
+/* 
+inputs 
+    ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, utxo_id: UtxoId { output_index: 0 }, owner: Predicate, status: Unspent })} 
+    ResourceSigned { resource: Coin { amount: 200000000000, asset_id: UNI, utxo_id: UtxoId { output_index: 1 }, owner: Bob, status: Unspent })}]
+outputs 
+    Coin { to: Alice, amount: 100000000000, asset_id: UNI }
+    Change { to: Bob, amount: 0, asset_id: UNI }
+    Coin { to: Bob, amount: 500000000, asset_id: USDC }
+    Change { to: Predicate, amount: 0, asset_id: USDC }]
 
+inputs 
+    ResourcePredicate { resource: Coin { amount: 500000000, asset_id: USDC, utxo_id: UtxoId { output_index: 3 }, owner: Predicate, status: Unspent })} 
+    ResourceSigned { resource: Coin { amount: 10000000000, asset_id: UNI, utxo_id: UtxoId { output_index: 1 }, owner: Bob, status: Unspent })}]
+outputs 
+    Coin { to: Alice, amount: 100000000000, asset_id: UNI }
+    Change { to: Bob, amount: 0, asset_id: UNI }
+    Coin { to: Bob, amount: 500000000, asset_id: USDC }
+    Change { to: Predicate, amount: 0, asset_id: USDC }]
+*/
 #[tokio::test]
 async fn partial_fulfill_order_test() {
     print_title("Partial fulfill Order Test");
@@ -38,8 +56,8 @@ async fn partial_fulfill_order_test() {
 
     let amount0 = 1_000_000_000; //1000 USDC
     let amount1 = 200_000_000_000; // 200 UNI
-    println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id.to_string());
-    println!("UNI AssetId (asset1) = 0x{:?}", uni.asset_id.to_string());
+    println!("USDC AssetId (asset0) = {:?}", usdc.asset_id.to_string());
+    println!("UNI AssetId (asset1) = {:?}", uni.asset_id.to_string());
     println!("amount0 = {:?} USDC", amount0 / 1_000_000);
     println!("amount1 = {:?} UNI\n", amount1 / 1_000_000_000);
 
@@ -65,6 +83,7 @@ async fn partial_fulfill_order_test() {
     let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
         .unwrap()
         .with_configurables(configurables);
+    println!("Predicate root = {:?}\n", predicate.address());
 
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
     // Alice transfer amount0 of  usdc.asset_id to the predicate root
