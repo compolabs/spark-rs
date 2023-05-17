@@ -1,0 +1,20 @@
+[package]
+name = "limit-order-predicate"
+description = "A cargo-generate template for Rust + Sway integration testing."
+version = "0.1.0"
+edition = "2021"
+authors = ["alexey <alexnagornnyy.an@gmail.com>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+# fuels = { version = "0.41", features = ["fuel-core-lib"] }
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "master"}
+tokio = { version = "1.12", features = ["rt", "macros"] }
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"
+
+[dependencies]
+serde_json = "1.0.96"
