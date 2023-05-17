@@ -19,14 +19,13 @@ configurable {
     ASSET1: b256 = ZERO_B256,
     MAKER: b256 = ZERO_B256,
     PRICE: u64 = 0,
+    // ASSET0_DECINALS: u8 = 1u8,
+    // ASSET1_DECINALS: u8 = 1u8,
 }
 
 // impl U128 {
 //     fn from_uint(value: u64) -> U128 {
-//         U128 {
-//             upper: value,
-//             lower: 0,
-//         }
+//         U128 {upper: value, lower: 0}
 //     }
 // }
 
