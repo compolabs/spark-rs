@@ -11,20 +11,20 @@ use crate::utils::{get_balance, local_tests_utils::*, print_title};
 
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Bob wants to exchange 200 UNI for 1000 USDC
-/* 
-inputs 
-    ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, utxo_id: UtxoId { output_index: 0 }, owner: Predicate, status: Unspent })} 
+/*
+inputs
+    ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, utxo_id: UtxoId { output_index: 0 }, owner: Predicate, status: Unspent })}
     ResourceSigned { resource: Coin { amount: 200000000000, asset_id: UNI, utxo_id: UtxoId { output_index: 1 }, owner: Bob, status: Unspent })}]
-outputs 
+outputs
     Coin { to: Alice, amount: 100000000000, asset_id: UNI }
     Change { to: Bob, amount: 0, asset_id: UNI }
     Coin { to: Bob, amount: 500000000, asset_id: USDC }
     Change { to: Predicate, amount: 0, asset_id: USDC }]
 
-inputs 
-    ResourcePredicate { resource: Coin { amount: 500000000, asset_id: USDC, utxo_id: UtxoId { output_index: 3 }, owner: Predicate, status: Unspent })} 
+inputs
+    ResourcePredicate { resource: Coin { amount: 500000000, asset_id: USDC, utxo_id: UtxoId { output_index: 3 }, owner: Predicate, status: Unspent })}
     ResourceSigned { resource: Coin { amount: 10000000000, asset_id: UNI, utxo_id: UtxoId { output_index: 1 }, owner: Bob, status: Unspent })}]
-outputs 
+outputs
     Coin { to: Alice, amount: 100000000000, asset_id: UNI }
     Change { to: Bob, amount: 0, asset_id: UNI }
     Coin { to: Bob, amount: 500000000, asset_id: USDC }
@@ -78,7 +78,8 @@ async fn partial_fulfill_order_test() {
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         // .set_ASSET1_DECINALS(1u8)
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
-        .set_PRICE(price);
+        .set_PRICE(price)
+        .set_MIN_FULFILL_AMOUNT0(amount0 / 2);
 
     let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
         .unwrap()
@@ -107,39 +108,45 @@ async fn partial_fulfill_order_test() {
         &bob,
         &alice.address(),
         usdc.asset_id,
-        amount0 / 2,
+        amount0 / 4 * 3,
         uni.asset_id,
-        amount1 / 2,
+        amount1 / 4 * 3,
     )
     .await
     .unwrap();
     // The predicate root has received the coin
-    println!("Bob transfers 100 UNI to base predicate, thus closing the order\n");
+    println!(
+        "Bob transfers {} UNI to base predicate, thus closing the order\n",
+        amount1 / 4 * 3 / 10u64.pow(9)
+    );
     let predicate_usdc_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
     let predicate_uni_balance = get_balance(provider, predicate.address(), uni.asset_id).await;
     let bob_uni_balance = get_balance(provider, bob.address(), uni.asset_id).await;
     let bob_usdc_balance = get_balance(provider, bob.address(), usdc.asset_id).await;
     let alice_uni_balance = get_balance(provider, &alice.address(), uni.asset_id).await;
     let alice_usdc_balance = get_balance(provider, &alice.address(), usdc.asset_id).await;
-    assert_eq!(predicate_usdc_balance, amount0 / 2);
+    assert_eq!(predicate_usdc_balance, amount0 / 4);
     assert_eq!(predicate_uni_balance, 0);
     assert_eq!(alice_usdc_balance, 0);
-    assert_eq!(bob_usdc_balance, amount0 / 2);
-    assert_eq!(alice_uni_balance, amount1 / 2);
-    assert_eq!(bob_uni_balance, amount1 / 2);
+    assert_eq!(bob_usdc_balance, amount0 / 4 * 3);
+    assert_eq!(alice_uni_balance, amount1 / 4 * 3);
+    assert_eq!(bob_uni_balance, amount1 / 4);
 
     let _res = fulfill_order(
         &predicate,
         &bob,
         alice.address(),
         usdc.asset_id,
-        amount0 / 2,
+        amount0 / 4,
         uni.asset_id,
-        amount1 / 2,
+        amount1 / 4,
     )
     .await
     .unwrap();
-    println!("Bob transfers another 100 UNI to new predicate, thus closing the order\n");
+    println!(
+        "Bob transfers another {} UNI to new predicate, thus closing the order\n",
+        amount1 / 4 / 10u64.pow(9)
+    );
     let predicate_usdc_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
     let bob_uni_balance = get_balance(provider, bob.address(), uni.asset_id).await;
     let bob_usdc_balance = get_balance(provider, bob.address(), usdc.asset_id).await;

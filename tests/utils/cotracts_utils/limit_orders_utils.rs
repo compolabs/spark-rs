@@ -29,7 +29,6 @@ pub mod limit_orders_interactions {
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let provider = wallet.provider().unwrap();
 
-        // Get predicate coin to unlock
         let inputs = predicate
             .clone()
             .set_provider(provider.clone())

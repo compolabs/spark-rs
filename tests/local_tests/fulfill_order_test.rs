@@ -68,7 +68,8 @@ async fn fulfill_order_test() {
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         // .set_ASSET1_DECINALS(1u8)
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
-        .set_PRICE(price);
+        .set_PRICE(price)
+        .set_MIN_FULFILL_AMOUNT0(amount0);
 
     let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
         .unwrap()
