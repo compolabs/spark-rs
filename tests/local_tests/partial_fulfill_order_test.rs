@@ -59,7 +59,12 @@ async fn partial_fulfill_order_test() {
     println!("USDC AssetId (asset0) = {:?}", usdc.asset_id.to_string());
     println!("UNI AssetId (asset1) = {:?}", uni.asset_id.to_string());
     println!("amount0 = {:?} USDC", amount0 / 1_000_000);
-    println!("amount1 = {:?} UNI\n", amount1 / 1_000_000_000);
+    println!("amount1 = {:?} UNI", amount1 / 1_000_000_000);
+    
+    let price_decimals = 9;
+    let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
+    let price = amount1 * 10u64.pow(exp) / amount0;
+    println!("Price = {:?}\n UNI/USDC", price);
 
     token_abi_calls::mint_and_transfer(&usdc_instance, amount0, alice_address).await;
     token_abi_calls::mint_and_transfer(&uni_instance, amount1, bob_address).await;
@@ -74,10 +79,10 @@ async fn partial_fulfill_order_test() {
 
     let configurables = LimitOrdersPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
-        // .set_ASSET0_DECINALS(1u8)
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
-        // .set_ASSET1_DECINALS(1u8)
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .set_ASSET0_DECINALS(usdc.config.decimals)
+        .set_ASSET1_DECINALS(uni.config.decimals)
         .set_PRICE(price)
         .set_MIN_FULFILL_AMOUNT0(amount0 / 2);
 
