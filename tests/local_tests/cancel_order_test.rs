@@ -35,8 +35,7 @@ async fn cancel_order_test() {
     let alice_address = Address::from(alice.address());
     let provider = alice.provider().unwrap();
 
-    println!("alice_address = 0x{:?}", alice_address);
-    println!("");
+    println!("alice_address = 0x{:?}\n", alice_address);
     //--------------- TOKENS ---------------
     let assets = init_tokens(&admin).await;
     let usdc = assets.get("USDC").unwrap();
