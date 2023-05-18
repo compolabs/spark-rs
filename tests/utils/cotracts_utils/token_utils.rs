@@ -79,7 +79,7 @@ pub async fn get_token_contract_instance(
         LoadConfiguration::default(),
     )
     .unwrap()
-    .with_salt(salt.into())
+    .with_salt(salt)
     .deploy(wallet, TxParameters::default())
     .await
     .unwrap();
