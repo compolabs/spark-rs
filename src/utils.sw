@@ -1,5 +1,4 @@
 library;
-use std::constants::ZERO_B256;
 
 ////////////
 // Inuput //
