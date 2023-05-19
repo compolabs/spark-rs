@@ -26,7 +26,8 @@ impl U128 {
 fn main() -> bool {
     let mut i = 0u8;
     let inputs: u8 = input_count();
-    while i < if inputs > 2u8 { 2u8 } else { inputs } {
+    // while i < if inputs > 2u8 { 2u8 } else { inputs } {
+    while i < inputs  {
         if input_owner(i).unwrap() == Address::from(MAKER) {
             return true;
         }

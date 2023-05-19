@@ -46,8 +46,8 @@ async fn fulfill_order_test() {
 
     let amount0 = 1_000_000_000; //1000 USDC
     let amount1 = 200_000_000_000; // 200 UNI
-    println!("USDC AssetId (asset0) = {:?}", usdc.asset_id.to_string());
-    println!("UNI AssetId (asset1) = {:?}", uni.asset_id.to_string());
+    println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id);
+    println!("UNI AssetId (asset1) = 0x{:?}", uni.asset_id);
     println!("amount0 = {:?} USDC", amount0 / 1_000_000);
     println!("amount1 = {:?} UNI", amount1 / 1_000_000_000);
     

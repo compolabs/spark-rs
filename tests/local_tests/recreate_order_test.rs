@@ -16,18 +16,10 @@ use crate::utils::{
     local_tests_utils::{init_tokens, init_wallets},
     print_title,
 };
-// Alice wants to exchange 1000 USDC for 200 UNI
-// Bob wants to exchange 200 UNI for 1000 USDC
-/*
-inputs
-   ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, owner: Predicate, status: Unspent }}
-outputs
-   Coin { to: Alice, amount: 0, asset_id: USDC }
-   Change { to: Alice, amount: 0, asset_id: USDC }
- */
+
 #[tokio::test]
 async fn cancel_order_test() {
-    print_title("Cancel Order Test");
+    print_title("Recreate Order Test");
     //--------------- WALLETS ---------------
     let wallets = init_wallets().await;
     let admin = &wallets[0];
@@ -74,12 +66,17 @@ async fn cancel_order_test() {
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
-    create_order(&alice, &predicate, &usdc_instance, amount0)
+    create_order(&alice, &predicate, &usdc_instance, amount0 / 2)
         .await
         .unwrap();
-    println!("Alice transfers 1000 USDC to predicate\n");
+    println!("Alice transfers 500 USDC to predicate\n");
 
-    cancel_order(&predicate, &alice, usdc.asset_id, amount0)
+    create_order(&alice, &predicate, &usdc_instance, amount0 / 2)
+        .await
+        .unwrap();
+    println!("Alice transfers 500 USDC to predicate\n");
+
+    cancel_order(&predicate, &alice, usdc.asset_id, amount0 / 2)
         .await
         .unwrap();
 
