@@ -15,6 +15,7 @@ configurable {
     MIN_FULFILL_AMOUNT0: u64 = 1,
     ASSET0_DECINALS: u8 = 1,
     ASSET1_DECINALS: u8 = 1,
+    PRICE_DECIALS: u8 = 9,
 }
 
 impl U128 {
@@ -26,17 +27,15 @@ impl U128 {
 fn main() -> bool {
     let mut i = 0u8;
     let inputs: u8 = input_count();
-    // while i < if inputs > 2u8 { 2u8 } else { inputs } {
     while i < inputs  {
         if input_owner(i).unwrap() == Address::from(MAKER) {
             return true;
         }
         i += 1u8;
     }
-    let price_decimals = 9;
     let asset0_amount_u64 = output_amount(2);
     let asset1_amount_u64 = output_amount(0);
-    let exp = U128::from_u64(price_decimals + ASSET0_DECINALS - ASSET1_DECINALS);
+    let exp = U128::from_u64(PRICE_DECIALS + ASSET0_DECINALS - ASSET1_DECINALS);
     let price = U128::from_u64(asset1_amount_u64) * U128::from_u64(10).pow(exp) / U128::from_u64(asset0_amount_u64);
     assert(price.as_u64().unwrap() >= PRICE);
     assert(PRICE > 0 && ASSET0 != ZERO_B256 && ASSET1 != ZERO_B256 && MAKER != ZERO_B256);

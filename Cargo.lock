@@ -1642,6 +1642,7 @@ version = "0.1.0"
 dependencies = [
  "dotenv",
  "fuels",
+ "serde",
  "serde_json",
  "tokio",
 ]
