@@ -7,7 +7,7 @@ abigen!(Contract(
 
 pub mod proxy_abi_calls {}
 
-pub async fn _get_proxy_contract_instance(wallet: &WalletUnlocked) -> ProxyContract<WalletUnlocked> {
+pub async fn get_proxy_contract_instance(wallet: &WalletUnlocked) -> ProxyContract<WalletUnlocked> {
     let path = "proxy-contract/out/debug/proxy-contract.bin";
     let id = Contract::load_from(path, LoadConfiguration::default())
         .unwrap()

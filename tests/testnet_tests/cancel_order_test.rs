@@ -33,7 +33,7 @@ pub struct Token {
 }
 
 const RPC: &str = "beta-3.fuel.network";
-const PROXY_ADDRESS: &str = "0x6f4b6994521d92664ec272382d86d3a3800a682fc53360854a9fc469e6ecd748";
+const PROXY_ADDRESS: &str = "0x8924a38ac11879670de1d0898c373beb1e35dca974c4cab8a70819322f6bd9c4";
 
 #[tokio::test]
 async fn cancel_order_test() {
@@ -94,9 +94,6 @@ async fn cancel_order_test() {
         .with_configurables(configurables);
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
-    // create_order(&alice, &predicate, &usdc_instance, amount0)
-    //     .await
-    //     .unwrap();
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
         asset_0: usdc.contract_id.into(),
@@ -108,7 +105,6 @@ async fn cancel_order_test() {
         asset_1_decimals: 9,
         price_decimals: 9,
     };
-    // let proxy = get_proxy_contract_instance(&alice).await;
     let call_params = CallParameters::default()
         .set_asset_id(usdc.asset_id)
         .set_amount(amount0);
