@@ -1,8 +1,8 @@
 use fuels::prelude::abigen;
 
 abigen!(Predicate(
-    name = "LimitOrdersPredicate",
-    abi = "out/debug/limit-order-predicate-abi.json"
+    name = "LimitOrderPredicate",
+    abi = "limit-order-predicate/out/debug/limit-order-predicate-abi.json"
 ));
 
 pub mod limit_orders_interactions {

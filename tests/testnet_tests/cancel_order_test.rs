@@ -3,7 +3,7 @@ use std::{collections::HashMap, env, fs::read_to_string, str::FromStr};
 use crate::utils::{
     cotracts_utils::{
         limit_orders_utils::{
-            limit_orders_interactions::cancel_order, LimitOrdersPredicateConfigurables,
+            limit_orders_interactions::cancel_order, LimitOrderPredicateConfigurables,
         },
         proxy_utils::{ProxyContract, ProxySendFundsToPredicateParams},
     },
@@ -81,7 +81,7 @@ async fn cancel_order_test() {
 
     //--------------- PREDICATE ---------
 
-    let configurables = LimitOrdersPredicateConfigurables::new()
+    let configurables = LimitOrderPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_ASSET0_DECINALS(usdc.decimals)
@@ -89,7 +89,7 @@ async fn cancel_order_test() {
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .set_PRICE(price);
 
-    let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
+    let predicate: Predicate = Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
         .unwrap()
         .with_configurables(configurables);
     println!("Predicate root = {:?}\n", predicate.address());
