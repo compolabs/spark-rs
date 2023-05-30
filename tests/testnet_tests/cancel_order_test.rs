@@ -9,11 +9,13 @@ use crate::utils::{
     },
     get_balance, print_title,
 };
+use chrono::Utc;
 use dotenv::dotenv;
 use fuels::{
     accounts::predicate::Predicate,
     prelude::{
-        Bech32ContractId, CallParameters, Provider, TxParameters, ViewOnlyAccount, WalletUnlocked,
+        Bech32ContractId, CallParameters, Provider, Transaction, TxParameters, ViewOnlyAccount,
+        WalletUnlocked,
     },
     types::{Address, AssetId, Bits256, ContractId},
 };
@@ -65,7 +67,7 @@ async fn cancel_order_test() {
     let uni = tokens.get("UNI").unwrap();
 
     let amount0 = 1000_000_000_u64; //1000 USDC
-    let amount1 = 200_000_000_000_u64; //200 UNI
+    let amount1 = 300_000_000_000_u64; //200 UNI
     println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id);
     println!("UNI AssetId (asset1) = 0x{:?}", uni.asset_id);
     println!("amount0 = {:?} USDC", amount0 / 1000_000);
@@ -89,9 +91,10 @@ async fn cancel_order_test() {
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .set_PRICE(price);
 
-    let predicate: Predicate = Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
-        .unwrap()
-        .with_configurables(configurables);
+    let predicate: Predicate =
+        Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
+            .unwrap()
+            .with_configurables(configurables);
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     let params = ProxySendFundsToPredicateParams {
@@ -109,17 +112,28 @@ async fn cancel_order_test() {
         .set_asset_id(usdc.asset_id)
         .set_amount(amount0);
     let contract_id: Bech32ContractId = ContractId::from_str(&PROXY_ADDRESS).unwrap().into();
+    println!(
+        "Proxy address \n{:?}\n{:?}\n",
+        PROXY_ADDRESS,
+        contract_id.to_string()
+    );
+
     let proxy = ProxyContract::new(contract_id, alice.clone());
-    proxy
+
+    let tx = proxy
         .methods()
         .send_funds_to_predicate_root(params)
         .append_variable_outputs(1)
         .tx_params(TxParameters::default().set_gas_price(1))
         .call_params(call_params)
         .unwrap()
-        .call()
+        .build_tx()
         .await
         .unwrap();
+    let id = tx.id();
+    let _res = provider.send_transaction(&tx).await.unwrap();
+    println!("Tx id = {id}",);
+    println!("⏱ timestamp= {:?}", Utc::now().timestamp());
     println!("Alice transfers 1000 USDC to predicate\n");
 
     cancel_order(&predicate, &alice, usdc.asset_id, amount0)
