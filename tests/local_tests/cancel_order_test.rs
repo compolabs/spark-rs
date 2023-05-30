@@ -1,15 +1,15 @@
 use fuels::{
     accounts::predicate::Predicate,
-    prelude::ViewOnlyAccount,
+    prelude::{CallParameters, ViewOnlyAccount},
     types::{Address, Bits256},
 };
 
 use crate::utils::{
     cotracts_utils::{
         limit_orders_utils::{
-            limit_orders_interactions::{cancel_order, create_order},
-            LimitOrdersPredicateConfigurables,
+            limit_orders_interactions::cancel_order, LimitOrderPredicateConfigurables,
         },
+        proxy_utils::{get_proxy_contract_instance, ProxySendFundsToPredicateParams},
         token_utils::{token_abi_calls, TokenContract},
     },
     get_balance,
@@ -60,7 +60,7 @@ async fn cancel_order_test() {
 
     //--------------- PREDICATE ---------
 
-    let configurables = LimitOrdersPredicateConfigurables::new()
+    let configurables = LimitOrderPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_ASSET0_DECINALS(usdc.config.decimals)
@@ -68,13 +68,38 @@ async fn cancel_order_test() {
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .set_PRICE(price);
 
-    let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
-        .unwrap()
-        .with_configurables(configurables);
+    let predicate: Predicate =
+        Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
+            .unwrap()
+            .with_configurables(configurables);
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
-    create_order(&alice, &predicate, &usdc_instance, amount0)
+    // create_order(&alice, &predicate, &usdc_instance, amount0)
+    //     .await
+    //     .unwrap();
+    let params = ProxySendFundsToPredicateParams {
+        predicate_root: predicate.address().into(),
+        asset_0: usdc.contract_id.into(),
+        asset_1: uni.contract_id.into(),
+        maker: alice_address,
+        min_fulfill_amount_0: 1,
+        price,
+        asset_0_decimals: 6,
+        asset_1_decimals: 9,
+        price_decimals: 9,
+    };
+    let proxy = get_proxy_contract_instance(alice).await;
+    let call_params = CallParameters::default()
+        .set_asset_id(usdc.asset_id)
+        .set_amount(amount0);
+    proxy
+        .methods()
+        .send_funds_to_predicate_root(params)
+        .append_variable_outputs(1)
+        .call_params(call_params)
+        .unwrap()
+        .call()
         .await
         .unwrap();
     println!("Alice transfers 1000 USDC to predicate\n");

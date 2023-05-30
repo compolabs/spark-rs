@@ -16,6 +16,8 @@ name = "integration_tests"
 path = "tests/harness.rs"
 
 [dependencies]
+chrono = "0.4.25"
 dotenv = "0.15.0"
 fuels = { git = "https://github.com/FuelLabs/fuels-rs", version = "0.41.0", branch = "master" }
+serde = "1.0.163"
 serde_json = "1.0.96"

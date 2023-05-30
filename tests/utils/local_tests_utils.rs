@@ -33,7 +33,7 @@ pub async fn init_tokens(admin: &WalletUnlocked) -> HashMap<String, Asset> {
             name: String::from(config_value["name"].as_str().unwrap()),
             symbol: String::from(config_value["symbol"].as_str().unwrap()),
             decimals: config_value["decimals"].as_u64().unwrap() as u8,
-            mint_amount: config_value["mint_amount"].as_u64().unwrap(),
+            mint_amount: config_value["mint_amount"].as_u64().unwrap_or(0),
         };
 
         let instance = if config.symbol != "ETH" {
@@ -53,7 +53,7 @@ pub async fn init_tokens(admin: &WalletUnlocked) -> HashMap<String, Asset> {
                 config,
                 contract_id,
                 asset_id: AssetId::from(*contract_id),
-                default_price: config_value["default_price"].as_u64().unwrap() * 10u64.pow(9),
+                default_price: config_value["default_price"].as_u64().unwrap_or(0) * 10u64.pow(9),
                 instance: Option::None,
             },
         );

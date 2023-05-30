@@ -5,7 +5,7 @@ use fuels::types::{Address, Bits256};
 use crate::utils::cotracts_utils::limit_orders_utils::limit_orders_interactions::{
     create_order, fulfill_order,
 };
-use crate::utils::cotracts_utils::limit_orders_utils::LimitOrdersPredicateConfigurables;
+use crate::utils::cotracts_utils::limit_orders_utils::LimitOrderPredicateConfigurables;
 use crate::utils::cotracts_utils::token_utils::{token_abi_calls, TokenContract};
 use crate::utils::{get_balance, local_tests_utils::*, print_title};
 
@@ -64,7 +64,7 @@ async fn fulfill_order_test() {
 
     //--------------- PREDICATE ---------
 
-    let configurables = LimitOrdersPredicateConfigurables::new()
+    let configurables = LimitOrderPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
@@ -73,7 +73,7 @@ async fn fulfill_order_test() {
         .set_PRICE(price)
         .set_MIN_FULFILL_AMOUNT0(amount0);
 
-    let predicate: Predicate = Predicate::load_from("./out/debug/limit-order-predicate.bin")
+    let predicate: Predicate = Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
         .unwrap()
         .with_configurables(configurables);
     println!("Predicate root = {:?}\n", predicate.address());
