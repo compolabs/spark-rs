@@ -5,36 +5,25 @@ use fuels::{
 };
 use spark_sdk::{
     limit_orders_utils::{
-        limit_orders_interactions::{cancel_order, create_order},
-        LimitOrderPredicateConfigurables,
+        limit_orders_interactions::create_order, LimitOrderPredicateConfigurables,
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
 
 use crate::utils::{
     cotracts_utils::token_utils::{token_abi_calls, TokenContract},
-    get_balance,
     local_tests_utils::{init_tokens, init_wallets},
     print_title,
 };
-// Alice wants to exchange 1000 USDC for 200 UNI
-// Alice canceled order
-/*
-inputs
-   ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, owner: Predicate, status: Unspent }}
-outputs
-   Coin { to: Alice, amount: 0, asset_id: USDC }
-   Change { to: Alice, amount: 0, asset_id: USDC }
- */
+
 #[tokio::test]
-async fn cancel_order_test() {
-    print_title("Cancel Order Test");
+async fn create_order_test() {
+    print_title("Create Order Test");
     //--------------- WALLETS ---------------
     let wallets = init_wallets().await;
     let admin = &wallets[0];
     let alice = &wallets[1];
     let alice_address = Address::from(alice.address());
-    let provider = alice.provider().unwrap();
 
     println!("alice_address = 0x{:?}\n", alice_address);
     //--------------- TOKENS ---------------
@@ -58,7 +47,6 @@ async fn cancel_order_test() {
     token_abi_calls::mint(&usdc_instance, amount0, alice_address)
         .await
         .unwrap();
-    let initial_alice_usdc_balance = get_balance(provider, alice.address(), usdc.asset_id).await;
     println!("Alice minting {:?} USDC\n", amount0 / 1000_000);
 
     //--------------- PREDICATE ---------
@@ -74,10 +62,12 @@ async fn cancel_order_test() {
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
             .unwrap()
-            .with_configurables(configurables);
+            .with_configurables(configurables)
+            .with_provider(admin.provider().unwrap().to_owned());
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
+
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
         asset_0: usdc.contract_id.into(),
@@ -97,19 +87,6 @@ async fn cancel_order_test() {
         .await
         .unwrap();
 
-    println!("Alice transfers 1000 USDC to predicate\n");
-
-    cancel_order(&alice, &predicate, usdc.asset_id, amount0)
-        .await
-        .unwrap();
-
-    println!("Alice canceles the order\n");
-    // The predicate root's coin has been spent
-    let predicate_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
-    assert_eq!(predicate_balance, 0);
-
-    // Wallet balance is the same as before it sent the coins to the predicate
-    let wallet_balance = get_balance(provider, alice.address(), usdc.asset_id).await;
-    assert_eq!(wallet_balance, initial_alice_usdc_balance);
-    println!("Alice balance 1000 UDSC\n");
+    assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == 0);
+    assert!(predicate.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
 }

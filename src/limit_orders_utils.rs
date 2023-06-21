@@ -7,10 +7,6 @@ abigen!(Predicate(
 
 pub mod limit_orders_interactions {
 
-    use crate::utils::cotracts_utils::proxy_utils;
-    use crate::utils::cotracts_utils::proxy_utils::proxy_instance_by_address;
-    use crate::utils::cotracts_utils::proxy_utils::ProxySendFundsToPredicateParams;
-
     use fuels::accounts::predicate::Predicate;
     use fuels::accounts::wallet::WalletUnlocked;
     use fuels::prelude::Account;
@@ -20,6 +16,10 @@ pub mod limit_orders_interactions {
     use fuels::programs::script_calls::ScriptCallHandler;
     use fuels::types::unresolved_bytes::UnresolvedBytes;
     use fuels::types::AssetId;
+
+    use crate::proxy_utils::proxy_abi_calls;
+    use crate::proxy_utils::proxy_instance_by_address;
+    use crate::proxy_utils::ProxySendFundsToPredicateParams;
 
     pub async fn cancel_order(
         wallet: &WalletUnlocked,
@@ -131,6 +131,6 @@ pub mod limit_orders_interactions {
         amount: u64,
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let proxy = proxy_instance_by_address(wallet, &proxy_address);
-        proxy_utils::proxy_abi_calls::send_funds_to_predicate_root(&proxy, params, amount).await
+        proxy_abi_calls::send_funds_to_predicate_root(&proxy, params, amount).await
     }
 }

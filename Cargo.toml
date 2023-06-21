@@ -1,23 +1,21 @@
 [package]
-name = "limit-order-predicate"
-description = "A cargo-generate template for Rust + Sway integration testing."
-version = "0.1.0"
+name = "spark_sdk"
+description = "Rust sdk of the Spark"
+version = "0.0.1"
 edition = "2021"
 authors = ["alexey <alexnagornnyy.an@gmail.com>"]
 license = "Apache-2.0"
 
-[dev-dependencies]
-# fuels = { version = "0.41", features = ["fuel-core-lib"] }
-tokio = { version = "1.12", features = ["rt", "macros"] }
-
 [[test]]
 harness = true
-name = "integration_tests"
+name = "tests"
 path = "tests/harness.rs"
 
+[dev-dependencies]
+tokio = { version = "1.12", features = ["rt", "macros"] }
+
 [dependencies]
-chrono = "0.4.25"
 dotenv = "0.15.0"
-fuels = { git = "https://github.com/FuelLabs/fuels-rs", version = "0.41.0", branch = "master" }
+fuels = { version = "0.43.0", features = ["fuel-core-lib"] }
 serde = "1.0.163"
 serde_json = "1.0.96"

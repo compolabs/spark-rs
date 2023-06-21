@@ -1,7 +1,8 @@
 use std::{collections::HashMap, fs, str::FromStr};
 
 use fuels::{
-    prelude::{WalletUnlocked, BASE_ASSET_ID},
+    accounts::wallet::WalletUnlocked,
+    prelude::BASE_ASSET_ID,
     test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig},
     types::{AssetId, ContractId},
 };
@@ -9,16 +10,8 @@ use fuels::{
 use super::cotracts_utils::token_utils::{self, Asset, DeployTokenConfig};
 
 pub async fn init_wallets() -> Vec<WalletUnlocked> {
-    launch_custom_provider_and_get_wallets(
-        WalletsConfig::new(
-            Some(5),             /* Single wallet */
-            Some(1),             /* Single coin (UTXO) */
-            Some(1_000_000_000), /* Amount per coin */
-        ),
-        None,
-        None,
-    )
-    .await
+    let config = WalletsConfig::new(Some(5), Some(1), Some(1_000_000_000));
+    launch_custom_provider_and_get_wallets(config, None, None).await
 }
 
 pub async fn init_tokens(admin: &WalletUnlocked) -> HashMap<String, Asset> {
@@ -37,7 +30,7 @@ pub async fn init_tokens(admin: &WalletUnlocked) -> HashMap<String, Asset> {
         };
 
         let instance = if config.symbol != "ETH" {
-            Some(token_utils::get_token_contract_instance(&admin, &config).await)
+            Some(token_utils::deploy_token_contract(&admin, &config).await)
         } else {
             None
         };

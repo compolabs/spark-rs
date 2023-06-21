@@ -11,9 +11,12 @@ abigen!(Contract(
     abi = "proxy-contract/out/debug/proxy-contract-abi.json"
 ));
 
-pub async fn deploy_proxy_contract(wallet: &WalletUnlocked) -> ProxyContract<WalletUnlocked> {
-    let path = "proxy-contract/out/debug/proxy-contract.bin";
-    let id = Contract::load_from(path, LoadConfiguration::default())
+pub async fn deploy_proxy_contract(
+    wallet: &WalletUnlocked,
+    bin_path: &str,
+) -> ProxyContract<WalletUnlocked> {
+    // let bin_path = "proxy-contract/out/debug/proxy-contract.bin";
+    let id = Contract::load_from(bin_path, LoadConfiguration::default())
         .unwrap()
         .deploy(wallet, TxParameters::default())
         .await
