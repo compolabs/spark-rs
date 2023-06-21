@@ -1,0 +1,116 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "u8",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [],
+      "name": "main",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": null
+    }
+  ],
+  "loggedTypes": [],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "ASSET0",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 8228
+    },
+    {
+      "name": "ASSET1",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 8260
+    },
+    {
+      "name": "MAKER",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 8292
+    },
+    {
+      "name": "PRICE",
+      "configurableType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": null
+      },
+      "offset": 8220
+    },
+    {
+      "name": "MIN_FULFILL_AMOUNT0",
+      "configurableType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": null
+      },
+      "offset": 8324
+    },
+    {
+      "name": "ASSET0_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 8156
+    },
+    {
+      "name": "ASSET1_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 8164
+    },
+    {
+      "name": "PRICE_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 8148
+    }
+  ]
+}

@@ -1,5 +1,7 @@
-out
-target
-.idea
-.gitignore
-.DS_Store
+*target
+/Cargo.lock
+*.idea
+*.bin
+*bin-root
+*storage_slots.json
+*.DS_Store
