@@ -42,7 +42,8 @@ pub mod limit_orders_interactions {
         let mut outputs = vec![];
         let mut output_to_maker = wallet.get_asset_outputs_for_amount(wallet.address(), asset0, 0);
         outputs.append(&mut output_to_maker);
-
+        // println!("inputs = {:?}", inputs);
+        // println!("outputs = {:?}", outputs);
         let script_call = ScriptCallHandler::new(
             vec![],
             UnresolvedBytes::default(),
@@ -53,7 +54,7 @@ pub mod limit_orders_interactions {
         .with_inputs(inputs)
         .with_outputs(outputs)
         .tx_params(TxParameters::default().set_gas_price(1));
-
+        // println!("script_call = {:?}", script_call);
         script_call.call().await
     }
 

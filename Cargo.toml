@@ -16,6 +16,8 @@ tokio = { version = "1.12", features = ["rt", "macros"] }
 
 [dependencies]
 dotenv = "0.15.0"
-fuels = { version = "0.43.0", features = ["fuel-core-lib"] }
+# fuels = { version = "0.43.0", features = ["fuel-core-lib"] }
+src20_sdk = { git = "https://github.com/compolabs/src-20.git", branch = "hotfix/v0.41.0-predicate-configurables" }
+fuels = { git = "https://github.com/FuelLabs/fuels-rs.git", branch = "hotfix/v0.41.0-predicate-configurables" }
 serde = "1.0.163"
 serde_json = "1.0.96"

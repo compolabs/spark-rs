@@ -10,10 +10,9 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
+use src20_sdk::{token_abi_calls, TokenContract};
 
 use crate::utils::{
-    cotracts_utils::token_utils::{token_abi_calls, TokenContract},
-    get_balance,
     local_tests_utils::{init_tokens, init_wallets},
     print_title,
 };
@@ -26,13 +25,12 @@ async fn cancel_order_test() {
     let admin = &wallets[0];
     let alice = &wallets[1];
     let alice_address = Address::from(alice.address());
-    let provider = alice.provider().unwrap();
 
     println!("alice_address = 0x{:?}\n", alice_address);
     //--------------- TOKENS ---------------
     let assets = init_tokens(&admin).await;
     let usdc = assets.get("USDC").unwrap();
-    let usdc_instance = TokenContract::new(usdc.contract_id, admin.clone());
+    let usdc_instance = TokenContract::new(usdc.contract_id.into(), admin.clone());
     let uni = assets.get("UNI").unwrap();
 
     let amount0 = 1000_000_000_u64; //1000 USDC
@@ -45,12 +43,12 @@ async fn cancel_order_test() {
     let price_decimals = 9;
     let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
     let price = amount1 * 10u64.pow(exp) / amount0;
-    println!("Price = {:?}\n UNI/USDC", price);
+    println!("Price = {:?} UNI/USDC", price);
 
     token_abi_calls::mint(&usdc_instance, amount0, alice_address)
         .await
         .unwrap();
-    let initial_alice_usdc_balance = get_balance(provider, alice.address(), usdc.asset_id).await;
+    let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     println!("Alice minting {:?} USDC\n", amount0 / 1000_000);
 
     //--------------- PREDICATE ---------
@@ -66,7 +64,8 @@ async fn cancel_order_test() {
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
             .unwrap()
-            .with_configurables(configurables);
+            .with_configurables(configurables)
+            .with_provider(admin.provider().unwrap().clone());
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
@@ -100,11 +99,11 @@ async fn cancel_order_test() {
 
     println!("Alice canceles the order\n");
     // The predicate root's coin has been spent
-    let predicate_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
+    let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(predicate_balance, 0);
 
     // Wallet balance is the same as before it sent the coins to the predicate
-    let wallet_balance = get_balance(provider, alice.address(), usdc.asset_id).await;
+    let wallet_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(wallet_balance, initial_alice_usdc_balance);
     println!("Alice balance 1000 UDSC\n");
 }
