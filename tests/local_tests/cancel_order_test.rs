@@ -66,7 +66,7 @@ async fn cancel_order_test() {
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_ASSET0_DECIMALS(usdc.config.decimals)
         .set_ASSET1_DECIMALS(uni.config.decimals)
-        // .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .set_PRICE(price);
 
     let predicate =

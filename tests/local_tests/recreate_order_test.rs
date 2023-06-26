@@ -18,7 +18,7 @@ use crate::utils::{
 };
 
 #[tokio::test]
-async fn cancel_order_test() {
+async fn recreate_order_test() {
     print_title("Recreate Order Test");
     //--------------- WALLETS ---------------
     let wallets = init_wallets().await;
