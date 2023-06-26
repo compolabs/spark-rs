@@ -8,14 +8,14 @@ use std::constants::{ZERO_B256};
 use utils::{output_coin_to, verify_output_coin};
 
 configurable {
-    ASSET0: b256 = ZERO_B256,
-    ASSET1: b256 = ZERO_B256,
-    MAKER: b256 = ZERO_B256,
-    PRICE: u64 = 0,
-    MIN_FULFILL_AMOUNT0: u64 = 1,
+    ASSET0: b256 = ZERO_B256, // Asset that provides maker(Alice)
+    ASSET1: b256 = ZERO_B256, // Asset that provides taker(Bob)
+    MAKER: b256 = ZERO_B256, // Order owner
+    PRICE: u64 = 0, // asset1_amount / asset0_amount
     ASSET0_DECIMALS: u8 = 1,
     ASSET1_DECIMALS: u8 = 1,
-    PRICE_DECIMALS: u8 = 9,
+    PRICE_DECIMALS: u8 = 9, // optional
+    MIN_FULFILL_AMOUNT0: u64 = 1, // optional
 }
 
 impl U128 {
