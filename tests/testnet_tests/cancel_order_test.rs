@@ -1,24 +1,23 @@
 use std::{collections::HashMap, env, fs::read_to_string, str::FromStr};
 
-use crate::utils::{
-    cotracts_utils::{
-        limit_orders_utils::{
-            limit_orders_interactions::{cancel_order, create_order},
-            LimitOrderPredicateConfigurables,
-        },
-        proxy_utils::ProxySendFundsToPredicateParams,
-        token_utils::{token_abi_calls, TokenContract},
-    },
-    get_balance, print_title,
-};
 use dotenv::dotenv;
 use fuels::{
     accounts::{predicate::Predicate, wallet::WalletUnlocked},
-    prelude::{Bech32ContractId, Provider},
+    prelude::{Bech32ContractId, Provider, ViewOnlyAccount},
     types::{Address, AssetId, Bits256, ContractId},
 };
 use serde::Deserialize;
 use serde_json::from_str;
+use spark_sdk::{
+    limit_orders_utils::{
+        limit_orders_interactions::{cancel_order, create_order},
+        LimitOrderPredicateConfigurables,
+    },
+    proxy_utils::ProxySendFundsToPredicateParams,
+};
+use src20_sdk::{token_abi_calls, TokenContract};
+
+use crate::utils::print_title;
 
 #[derive(Deserialize)]
 pub struct TokenConfig {
@@ -83,27 +82,30 @@ async fn cancel_order_test() {
     let exp = (price_decimals + usdc.decimals - uni.decimals).into();
     let price = amount1 * 10u64.pow(exp) / amount0;
     println!("Price = {:?}UNI/USDC\n", price);
-    let initial_alice_usdc_balance = get_balance(&provider, alice.address(), usdc.asset_id).await;
+    let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     if initial_alice_usdc_balance < amount0 {
-        token_abi_calls::mint_and_transfer(&usdc.instance, amount0, alice_address).await;
+        token_abi_calls::mint(&usdc.instance, amount0, alice_address)
+            .await
+            .unwrap();
         println!("Alice minting {:?} USDC\n", amount0 / 1000_000);
     }
-    let initial_alice_usdc_balance = get_balance(&provider, alice.address(), usdc.asset_id).await;
+    let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
 
     //--------------- PREDICATE ---------
 
     let configurables = LimitOrderPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
-        .set_ASSET0_DECINALS(usdc.decimals)
-        .set_ASSET1_DECINALS(uni.decimals)
+        .set_ASSET0_DECIMALS(usdc.decimals)
+        .set_ASSET1_DECIMALS(uni.decimals)
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .set_PRICE(price);
 
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
             .unwrap()
-            .with_configurables(configurables);
+            .with_configurables(configurables)
+            .with_provider(admin.provider().unwrap().clone());
     println!("Predicate root = {:?}\n", predicate.address());
     //--------------- THE TEST ---------
     let params = ProxySendFundsToPredicateParams {
@@ -130,11 +132,11 @@ async fn cancel_order_test() {
 
     println!("Alice canceles the order\n");
     // The predicate root's coin has been spent
-    let predicate_balance = get_balance(&provider, predicate.address(), usdc.asset_id).await;
+    let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(predicate_balance, 0);
 
     // Wallet balance is the same as before it sent the coins to the predicate
-    let wallet_balance = get_balance(&provider, alice.address(), usdc.asset_id).await;
+    let wallet_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(wallet_balance, initial_alice_usdc_balance);
     println!("Alice balance 1000 UDSC\n");
 }

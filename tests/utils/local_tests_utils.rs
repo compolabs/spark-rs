@@ -6,8 +6,9 @@ use fuels::{
     test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig},
     types::{AssetId, ContractId},
 };
+use src20_sdk::{deploy_token_contract, DeployTokenConfig};
 
-use super::cotracts_utils::token_utils::{self, Asset, DeployTokenConfig};
+use super::cotracts_utils::token_utils::Asset;
 
 pub async fn init_wallets() -> Vec<WalletUnlocked> {
     let config = WalletsConfig::new(Some(5), Some(1), Some(1_000_000_000));
@@ -26,11 +27,10 @@ pub async fn init_tokens(admin: &WalletUnlocked) -> HashMap<String, Asset> {
             name: String::from(config_value["name"].as_str().unwrap()),
             symbol: String::from(config_value["symbol"].as_str().unwrap()),
             decimals: config_value["decimals"].as_u64().unwrap() as u8,
-            mint_amount: config_value["mint_amount"].as_u64().unwrap_or(0),
         };
 
         let instance = if config.symbol != "ETH" {
-            Some(token_utils::deploy_token_contract(&admin, &config).await)
+            Some(deploy_token_contract(&admin, &config, "tests/artefacts/token/FRC20.bin").await)
         } else {
             None
         };

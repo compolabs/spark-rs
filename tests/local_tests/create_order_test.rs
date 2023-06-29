@@ -9,9 +9,9 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
+use src20_sdk::{TokenContract, token_abi_calls};
 
 use crate::utils::{
-    cotracts_utils::token_utils::{token_abi_calls, TokenContract},
     local_tests_utils::{init_tokens, init_wallets},
     print_title,
 };
@@ -29,7 +29,7 @@ async fn create_order_test() {
     //--------------- TOKENS ---------------
     let assets = init_tokens(&admin).await;
     let usdc = assets.get("USDC").unwrap();
-    let usdc_instance = TokenContract::new(usdc.contract_id, admin.clone());
+    let usdc_instance = TokenContract::new(usdc.contract_id.into(), admin.clone());
     let uni = assets.get("UNI").unwrap();
 
     let amount0 = 1000_000_000_u64; //1000 USDC
@@ -42,7 +42,7 @@ async fn create_order_test() {
     let price_decimals = 9;
     let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
     let price = amount1 * 10u64.pow(exp) / amount0;
-    println!("Price = {:?}\n UNI/USDC", price);
+    println!("Price = {:?} UNI/USDC", price);
 
     token_abi_calls::mint(&usdc_instance, amount0, alice_address)
         .await

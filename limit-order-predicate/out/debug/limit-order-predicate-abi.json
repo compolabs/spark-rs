@@ -47,7 +47,7 @@
         "type": 0,
         "typeArguments": null
       },
-      "offset": 8228
+      "offset": 9548
     },
     {
       "name": "ASSET1",
@@ -56,7 +56,7 @@
         "type": 0,
         "typeArguments": null
       },
-      "offset": 8260
+      "offset": 9580
     },
     {
       "name": "MAKER",
@@ -65,7 +65,7 @@
         "type": 0,
         "typeArguments": null
       },
-      "offset": 8292
+      "offset": 9612
     },
     {
       "name": "PRICE",
@@ -74,7 +74,7 @@
         "type": 2,
         "typeArguments": null
       },
-      "offset": 8220
+      "offset": 9540
     },
     {
       "name": "MIN_FULFILL_AMOUNT0",
@@ -83,7 +83,7 @@
         "type": 2,
         "typeArguments": null
       },
-      "offset": 8324
+      "offset": 9644
     },
     {
       "name": "ASSET0_DECIMALS",
@@ -92,7 +92,7 @@
         "type": 3,
         "typeArguments": null
       },
-      "offset": 8156
+      "offset": 9476
     },
     {
       "name": "ASSET1_DECIMALS",
@@ -101,7 +101,7 @@
         "type": 3,
         "typeArguments": null
       },
-      "offset": 8164
+      "offset": 9484
     },
     {
       "name": "PRICE_DECIMALS",
@@ -110,7 +110,7 @@
         "type": 3,
         "typeArguments": null
       },
-      "offset": 8148
+      "offset": 9468
     }
   ]
 }

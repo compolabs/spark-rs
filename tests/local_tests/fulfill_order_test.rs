@@ -8,9 +8,10 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
+use src20_sdk::{token_abi_calls, TokenContract};
 
-use crate::utils::cotracts_utils::token_utils::{token_abi_calls, TokenContract};
-use crate::utils::{get_balance, local_tests_utils::*, print_title};
+use crate::utils::local_tests_utils::{init_tokens, init_wallets};
+use crate::utils::print_title;
 
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Bob wants to exchange 200 UNI for 1000 USDC
@@ -34,7 +35,6 @@ async fn fulfill_order_test() {
     let alice_address = Address::from(alice.address());
     let bob = wallets[2].clone();
     let bob_address = Address::from(bob.address());
-    let provider = alice.provider().unwrap();
 
     println!("admin_address = 0x{:?}", Address::from(admin.address()));
     println!("alice_address = 0x{:?}", alice_address);
@@ -43,9 +43,9 @@ async fn fulfill_order_test() {
     //--------------- TOKENS ---------------
     let assets = init_tokens(&admin).await;
     let usdc = assets.get("USDC").unwrap();
-    let usdc_instance = TokenContract::new(usdc.contract_id, admin.clone());
+    let usdc_instance = TokenContract::new(usdc.contract_id.into(), admin.clone());
     let uni = assets.get("UNI").unwrap();
-    let uni_instance = TokenContract::new(uni.contract_id, admin.clone());
+    let uni_instance = TokenContract::new(uni.contract_id.into(), admin.clone());
 
     let amount0 = 1_000_000_000; //1000 USDC
     let amount1 = 200_000_000_000; // 200 UNI
@@ -57,7 +57,7 @@ async fn fulfill_order_test() {
     let price_decimals = 9;
     let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
     let price = amount1 * 10u64.pow(exp) / amount0;
-    println!("Price = {:?}\n UNI/USDC", price);
+    println!("Price = {:?} UNI/USDC", price);
 
     token_abi_calls::mint(&usdc_instance, amount0, alice_address)
         .await
@@ -83,7 +83,8 @@ async fn fulfill_order_test() {
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
             .unwrap()
-            .with_configurables(configurables);
+            .with_configurables(configurables)
+            .with_provider(admin.provider().unwrap().clone());
     println!("Predicate root = {:?}\n", predicate.address());
 
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
@@ -108,12 +109,12 @@ async fn fulfill_order_test() {
         .await
         .unwrap();
 
-    let initial_bob_usdc_balance = get_balance(provider, bob.address(), usdc.asset_id).await;
-    let initial_bob_uni_balance = get_balance(provider, bob.address(), uni.asset_id).await;
-    let initial_alice_uni_balance = get_balance(provider, alice.address(), uni.asset_id).await;
+    let initial_bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
+    let initial_bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
+    let initial_alice_uni_balance = alice.get_asset_balance(&uni.asset_id).await.unwrap();
 
     // The predicate root has received the coin
-    let predicate_usdc_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
+    let predicate_usdc_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(predicate_usdc_balance, amount0);
 
     println!("Alice transfers 1000 USDC to predicate\n");
@@ -132,10 +133,10 @@ async fn fulfill_order_test() {
 
     println!("Bob transfers 200 UNI to predicate, thus closing the order\n");
 
-    let predicate_balance = get_balance(provider, predicate.address(), usdc.asset_id).await;
-    let bob_uni_balance = get_balance(provider, bob.address(), uni.asset_id).await;
-    let bob_usdc_balance = get_balance(provider, bob.address(), usdc.asset_id).await;
-    let alice_uni_balance = get_balance(provider, &alice.address(), uni.asset_id).await;
+    let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
+    let bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
+    let bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
+    let alice_uni_balance = alice.get_asset_balance(&uni.asset_id).await.unwrap();
 
     // The predicate root's coin has been spent
     assert_eq!(predicate_balance, 0);
