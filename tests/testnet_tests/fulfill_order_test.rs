@@ -154,7 +154,7 @@ async fn fulfill_order_test() {
 
     println!("Alice transfers 1000 USDC to predicate\n");
 
-    let res = fulfill_order(
+    let _res = fulfill_order(
         &bob,
         &predicate,
         alice.address(),
@@ -166,7 +166,7 @@ async fn fulfill_order_test() {
     .await
     .unwrap();
 
-    println!("res = {:#?}", res);
+    // println!("res = {:#?}", res);
 
     println!("Bob transfers 200 UNI to predicate, thus closing the order\n");
 
