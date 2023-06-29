@@ -14,7 +14,7 @@ Alice provides information about the price and tokens in this predicate. Additio
 
 ### Spark Rust SDK
 Designed for seamless integration with CLOB Spark using the Rust programming language, the Spark Rust SDK offers the following functionality:
-
+----------
 #### Getting Predicate Instance
 To create a predicate, you need to provide the following configurables:
 ```rust
@@ -55,7 +55,7 @@ let predicate: Predicate = Predicate::load_from(PREDICATE_BIN_PATH)
     .unwrap()
     .with_configurables(configurables);
 ```
-
+----------
 #### Order Creation
 ```rust
 async fn create_order(
@@ -85,7 +85,7 @@ create_order(&alice, PROXY_ADDRESS, params, amount0)
     .await
     .unwrap();
 ```
-
+----------
 #### Order Cancellation
 ```rust
 pub async fn cancel_order(
@@ -101,7 +101,7 @@ cancel_order(&alice, &predicate, usdc_asset_id, usdc_mint_amount)
     .await
     .unwrap();
 ```
-
+----------
 #### Order Fulfillment
 ```rust
 async fn fulfill_order(
