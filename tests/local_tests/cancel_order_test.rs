@@ -1,10 +1,8 @@
 use crate::utils::cotracts_utils::token_utils::deploy_tokens;
 use crate::utils::{local_tests_utils::init_wallets, print_title};
-use fuels::accounts::Account;
-use fuels::types::AssetId;
 use fuels::{
     accounts::predicate::Predicate,
-    prelude::{TxParameters, ViewOnlyAccount},
+    prelude::ViewOnlyAccount,
     types::{Address, Bits256},
 };
 use spark_sdk::{
