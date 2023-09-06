@@ -19,7 +19,7 @@ library;
 ////////////
 
 const GTF_OUTPUT_TYPE = 0x201;
-const OUTPUT_TYPE_COIN = 0u8; 
+const OUTPUT_TYPE_COIN = 0; 
 const GTF_OUTPUT_COIN_TO: u64 = 0x202;
 // const GTF_OUTPUT_COIN_AMOUNT: u64 = 0x203;
 // const GTF_OUTPUT_COIN_ASSET_ID: u64 = 0x204;

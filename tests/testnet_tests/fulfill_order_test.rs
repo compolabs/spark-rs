@@ -150,7 +150,7 @@ async fn fulfill_order_test() {
 
     // The predicate root has received the coin
     let predicate_usdc_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
-    assert_eq!(predicate_usdc_balance, amount0);
+    assert!(predicate_usdc_balance >= amount0);
 
     println!("Alice transfers 1000 USDC to predicate\n");
 

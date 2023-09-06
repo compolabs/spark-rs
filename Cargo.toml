@@ -17,6 +17,6 @@ tokio = { version = "1.12", features = ["rt", "macros"] }
 [dependencies]
 dotenv = "0.15.0"
 src20_sdk = "0.0.3"
-fuels = { version = "0.41.1", features = ["fuel-core-lib"] }
+fuels = { version = "0.47.0", features = ["fuel-core-lib"] }
 serde = "1.0.163"
 serde_json = "1.0.96"
