@@ -15,7 +15,6 @@ use spark_sdk::{
     },
     proxy_utils::ProxySendFundsToPredicateParams,
 };
-use src20_sdk::{token_abi_calls, TokenContract};
 
 use crate::utils::print_title;
 

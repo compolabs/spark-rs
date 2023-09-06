@@ -1,6 +1,10 @@
+use crate::utils::cotracts_utils::token_utils::deploy_tokens;
+use crate::utils::{local_tests_utils::init_wallets, print_title};
+use fuels::accounts::Account;
+use fuels::types::AssetId;
 use fuels::{
     accounts::predicate::Predicate,
-    prelude::ViewOnlyAccount,
+    prelude::{TxParameters, ViewOnlyAccount},
     types::{Address, Bits256},
 };
 use spark_sdk::{
@@ -10,12 +14,7 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
-use src20_sdk::{token_abi_calls, TokenContract};
-
-use crate::utils::{
-    local_tests_utils::{init_tokens, init_wallets},
-    print_title,
-};
+use src20_sdk::{deploy_token_factory_contract, token_factory_abi_calls};
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Alice canceled order
 /*
@@ -36,9 +35,11 @@ async fn cancel_order_test() {
 
     println!("alice_address = 0x{:?}\n", alice_address);
     //--------------- TOKENS ---------------
-    let assets = init_tokens(&admin).await;
+    let factory =
+        deploy_token_factory_contract(admin, "tests/artefacts/factory/token-factory.bin").await;
+    let assets = deploy_tokens(&factory, "tests/artefacts/tokens.json").await;
+
     let usdc = assets.get("USDC").unwrap();
-    let usdc_instance = TokenContract::new(usdc.contract_id.into(), admin.clone());
     let uni = assets.get("UNI").unwrap();
 
     let amount0 = 1000_000_000_u64; //1000 USDC
@@ -49,11 +50,11 @@ async fn cancel_order_test() {
     println!("amount1 = {:?} UNI", amount1 / 1000_000_000);
 
     let price_decimals = 9;
-    let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
-    let price = amount1 * 10u64.pow(exp) / amount0;
+    let exp = price_decimals + usdc.decimals - uni.decimals;
+    let price = amount1 * 10u64.pow(exp as u32) / amount0;
     println!("Price = {:?} UNI/USDC", price);
 
-    token_abi_calls::mint(&usdc_instance, amount0, alice_address)
+    token_factory_abi_calls::mint(&factory, alice_address, &usdc.symbol, amount0)
         .await
         .unwrap();
     let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
@@ -62,12 +63,12 @@ async fn cancel_order_test() {
     //--------------- PREDICATE ---------
 
     let configurables = LimitOrderPredicateConfigurables::new()
-        .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
-        .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
-        .set_ASSET0_DECIMALS(usdc.config.decimals)
-        .set_ASSET1_DECIMALS(uni.config.decimals)
-        .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
-        .set_PRICE(price);
+        .with_ASSET0(usdc.bits256)
+        .with_ASSET1(uni.bits256)
+        .with_ASSET0_DECIMALS(usdc.decimals as u8)
+        .with_ASSET1_DECIMALS(uni.decimals as u8)
+        .with_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .with_PRICE(price);
 
     let predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
@@ -79,8 +80,8 @@ async fn cancel_order_test() {
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
-        asset_0: usdc.contract_id.into(),
-        asset_1: uni.contract_id.into(),
+        asset_0: usdc.bits256,
+        asset_1: uni.bits256,
         maker: alice_address,
         min_fulfill_amount_0: 1,
         price,
@@ -107,6 +108,16 @@ async fn cancel_order_test() {
     );
 
     println!("Alice transfers 1000 USDC to predicate\n");
+    // alice
+    //     .clone()
+    //     .transfer(
+    //         predicate.address(),
+    //         100,
+    //         AssetId::BASE,
+    //         TxParameters::default(),
+    //     )
+    //     .await
+    //     .unwrap();
 
     cancel_order(&alice, &predicate, usdc.asset_id, amount0)
         .await

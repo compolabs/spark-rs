@@ -28,13 +28,13 @@ pub mod limit_orders_interactions {
         amount0: u64,
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let provider = wallet.provider().unwrap();
+        let mut predicate = predicate.clone();
+        predicate.set_provider(provider.clone());
 
         let mut inputs = vec![];
 
         let mut inputs_predicate = predicate
-            .clone()
-            .set_provider(provider.clone())
-            .get_asset_inputs_for_amount(asset0, amount0, None)
+            .get_asset_inputs_for_amount(asset0, amount0)
             .await
             .unwrap();
         inputs.append(&mut inputs_predicate);
@@ -53,8 +53,8 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().set_gas_price(1));
-        // println!("script_call = {:?}", script_call);
+        .tx_params(TxParameters::default().with_gas_price(1));
+
         script_call.call().await
     }
 
@@ -68,18 +68,18 @@ pub mod limit_orders_interactions {
         amount1: u64,
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let provider = wallet.provider().unwrap();
+        let mut predicate = predicate.clone();
+        predicate.set_provider(provider.clone());
 
         let mut inputs = vec![];
         // let balance = predicate.get_asset_balance(&asset0).await.unwrap_or(0);
         let mut inputs_predicate = predicate
-            .clone()
-            .set_provider(provider.clone())
-            .get_asset_inputs_for_amount(asset0, 1, None)
+            .get_asset_inputs_for_amount(asset0, 1)
             .await
             .unwrap();
         inputs.append(&mut inputs_predicate);
         let mut inputs_from_taker = wallet
-            .get_asset_inputs_for_amount(asset1, amount1, None)
+            .get_asset_inputs_for_amount(asset1, amount1)
             .await
             .unwrap();
         inputs.append(&mut inputs_from_taker);
@@ -120,7 +120,7 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().set_gas_price(1));
+        .tx_params(TxParameters::default().with_gas_price(1));
 
         script_call.call().await
     }
