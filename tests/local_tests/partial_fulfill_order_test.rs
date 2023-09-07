@@ -8,9 +8,10 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
-use src20_sdk::{token_abi_calls, TokenContract};
+use src20_sdk::{deploy_token_factory_contract, token_factory_abi_calls};
 
-use crate::utils::local_tests_utils::{init_tokens, init_wallets};
+use crate::utils::cotracts_utils::token_utils::deploy_tokens;
+use crate::utils::local_tests_utils::init_wallets;
 use crate::utils::print_title;
 
 // Alice wants to exchange 1000 USDC for 200 UNI
@@ -39,10 +40,10 @@ async fn partial_fulfill_order_test() {
     print_title("Partial fulfill Order Test");
     //--------------- WALLETS ---------------
     let wallets = init_wallets().await;
-    let admin = wallets[0].clone();
-    let alice = wallets[1].clone();
+    let admin = &wallets[0];
+    let alice = &wallets[1];
     let alice_address = Address::from(alice.address());
-    let bob = wallets[2].clone();
+    let bob = &wallets[2];
     let bob_address = Address::from(bob.address());
 
     println!("admin_address = 0x{:?}", Address::from(admin.address()));
@@ -50,11 +51,12 @@ async fn partial_fulfill_order_test() {
     println!("bob_address = 0x{:?}\n", bob_address);
 
     //--------------- TOKENS ---------------
-    let assets = init_tokens(&admin).await;
+    let factory =
+        deploy_token_factory_contract(admin, "tests/artefacts/factory/token-factory.bin").await;
+    let assets = deploy_tokens(&factory, "tests/artefacts/tokens.json").await;
+
     let usdc = assets.get("USDC").unwrap();
-    let usdc_instance = TokenContract::new(usdc.contract_id.into(), admin.clone());
     let uni = assets.get("UNI").unwrap();
-    let uni_instance = TokenContract::new(uni.contract_id.into(), admin.clone());
 
     let amount0 = 1_000_000_000; //1000 USDC
     let amount1 = 200_000_000_000; // 200 UNI
@@ -64,14 +66,14 @@ async fn partial_fulfill_order_test() {
     println!("amount1 = {:?} UNI", amount1 / 1_000_000_000);
 
     let price_decimals = 9;
-    let exp = (price_decimals + usdc.config.decimals - uni.config.decimals).into();
-    let price = amount1 * 10u64.pow(exp) / amount0;
+    let exp = price_decimals + usdc.decimals - uni.decimals;
+    let price = amount1 * 10u64.pow(exp as u32) / amount0;
     println!("Price = {:?} UNI/USDC", price);
 
-    token_abi_calls::mint(&usdc_instance, amount0, alice_address)
+    token_factory_abi_calls::mint(&factory, alice_address, &usdc.symbol, amount0)
         .await
         .unwrap();
-    token_abi_calls::mint(&uni_instance, amount1, bob_address)
+    token_factory_abi_calls::mint(&factory, bob_address, &uni.symbol, amount1)
         .await
         .unwrap();
 
@@ -84,13 +86,13 @@ async fn partial_fulfill_order_test() {
     let price = amount1 * exp / amount0;
 
     let configurables = LimitOrderPredicateConfigurables::new()
-        .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
-        .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
-        .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
-        .set_ASSET0_DECIMALS(usdc.config.decimals)
-        .set_ASSET1_DECIMALS(uni.config.decimals)
-        .set_PRICE(price)
-        .set_MIN_FULFILL_AMOUNT0(amount0 / 2);
+        .with_ASSET0(usdc.bits256)
+        .with_ASSET1(uni.bits256)
+        .with_ASSET0_DECIMALS(usdc.decimals as u8)
+        .with_ASSET1_DECIMALS(uni.decimals as u8)
+        .with_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .with_PRICE(price)
+        .with_MIN_FULFILL_AMOUNT0(amount0 / 2);
 
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
@@ -98,14 +100,13 @@ async fn partial_fulfill_order_test() {
             .with_configurables(configurables)
             .with_provider(admin.provider().unwrap().clone());
     println!("Predicate root = {:?}\n", predicate.address());
-
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
     // Alice transfer amount0 of  usdc.asset_id to the predicate root
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
-        asset_0: usdc.contract_id.into(),
-        asset_1: uni.contract_id.into(),
+        asset_0: usdc.bits256,
+        asset_1: uni.bits256,
         maker: alice_address,
         min_fulfill_amount_0: 1,
         price,

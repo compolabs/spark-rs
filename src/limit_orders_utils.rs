@@ -6,7 +6,6 @@ abigen!(Predicate(
 ));
 
 pub mod limit_orders_interactions {
-
     use fuels::accounts::predicate::Predicate;
     use fuels::accounts::wallet::WalletUnlocked;
     use fuels::prelude::Account;
@@ -14,6 +13,7 @@ pub mod limit_orders_interactions {
     use fuels::prelude::TxParameters;
     use fuels::programs::call_response::FuelCallResponse;
     use fuels::programs::script_calls::ScriptCallHandler;
+    use fuels::types::output::Output;
     use fuels::types::unresolved_bytes::UnresolvedBytes;
     use fuels::types::AssetId;
 
@@ -42,8 +42,16 @@ pub mod limit_orders_interactions {
         let mut outputs = vec![];
         let mut output_to_maker = wallet.get_asset_outputs_for_amount(wallet.address(), asset0, 0);
         outputs.append(&mut output_to_maker);
-        // println!("inputs = {:?}", inputs);
-        // println!("outputs = {:?}", outputs);
+
+        let base_asset = wallet
+            .get_asset_inputs_for_amount(AssetId::BASE, 10)
+            .await
+            .unwrap();
+        inputs.extend(base_asset);
+
+        let change = Output::change(wallet.address().into(), 0, AssetId::BASE);
+        outputs.push(change);
+
         let script_call = ScriptCallHandler::new(
             vec![],
             UnresolvedBytes::default(),
@@ -111,6 +119,15 @@ pub mod limit_orders_interactions {
         //     outputs.push(partial_fulfill_output);
         // }
 
+        let base_asset = wallet
+            .get_asset_inputs_for_amount(AssetId::BASE, 10)
+            .await
+            .unwrap();
+        inputs.extend(base_asset);
+
+        let change = Output::change(wallet.address().into(), 0, AssetId::BASE);
+        outputs.push(change);
+
         let script_call = ScriptCallHandler::new(
             vec![],
             UnresolvedBytes::default(),
@@ -119,8 +136,7 @@ pub mod limit_orders_interactions {
             Default::default(),
         )
         .with_inputs(inputs)
-        .with_outputs(outputs)
-        .tx_params(TxParameters::default().with_gas_price(1));
+        .with_outputs(outputs);
 
         script_call.call().await
     }
