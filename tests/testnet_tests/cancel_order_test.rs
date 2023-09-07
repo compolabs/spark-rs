@@ -31,7 +31,7 @@ pub struct Token {
     instance: TokenContract<WalletUnlocked>,
 }
 
-const RPC: &str = "beta-3.fuel.network";
+const RPC: &str = "beta-4.fuel.network";
 const PROXY_ADDRESS: &str = "0x8924a38ac11879670de1d0898c373beb1e35dca974c4cab8a70819322f6bd9c4";
 //https://spark-indexer.spark-defi.com/api/graph/compolabs/spark_indexer
 
