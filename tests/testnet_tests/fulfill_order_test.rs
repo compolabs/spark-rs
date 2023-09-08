@@ -1,13 +1,11 @@
-use std::{collections::HashMap, env, fs::read_to_string, str::FromStr};
+use std::{env, str::FromStr};
 
 use dotenv::dotenv;
 use fuels::{
     accounts::{predicate::Predicate, wallet::WalletUnlocked},
-    prelude::{Bech32ContractId, Provider, ViewOnlyAccount},
-    types::{Address, AssetId, Bits256, ContractId},
+    prelude::{Provider, ViewOnlyAccount},
+    types::{Address, Bits256, ContractId},
 };
-use serde::Deserialize;
-use serde_json::from_str;
 use spark_sdk::{
     limit_orders_utils::{
         limit_orders_interactions::{create_order, fulfill_order},
@@ -15,25 +13,13 @@ use spark_sdk::{
     },
     proxy_utils::ProxySendFundsToPredicateParams,
 };
-use src20_sdk::{token_abi_calls, TokenContract};
+use src20_sdk::{token_factory_abi_calls, TokenFactoryContract};
 
-use crate::utils::print_title;
-
-#[derive(Deserialize)]
-pub struct TokenConfig {
-    symbol: String,
-    decimals: u8,
-    asset_id: String,
-}
-pub struct Token {
-    decimals: u8,
-    asset_id: AssetId,
-    contract_id: ContractId,
-    instance: TokenContract<WalletUnlocked>,
-}
+use crate::utils::{cotracts_utils::token_utils::load_tokens, print_title};
 
 const RPC: &str = "beta-4.fuel.network";
-const PROXY_ADDRESS: &str = "0x8924a38ac11879670de1d0898c373beb1e35dca974c4cab8a70819322f6bd9c4";
+const PROXY_ADDRESS: &str = "0x737b9275a850fc0d2e40a2e17e6d00ef0568df95657c2726a854089cf176af15";
+const FACTORY_ADDRESS: &str = "0xd8c627b9cd9ee42e2c2bd9793b13bc9f8e9aad32e25a99ea574f23c1dd17685a";
 //https://spark-indexer.spark-defi.com/api/graph/compolabs/spark_indexer
 
 #[tokio::test]
@@ -60,23 +46,12 @@ async fn fulfill_order_test() {
     println!("alice_address = 0x{:?}", alice_address);
     println!("bob_address = 0x{:?}\n", bob_address);
     //--------------- TOKENS ---------------
-    let token_configs: Vec<TokenConfig> =
-        from_str(&read_to_string("tests/artefacts/tokens.json").unwrap()).unwrap();
-    let mut tokens: HashMap<String, Token> = HashMap::new();
-    for config in token_configs {
-        let contract_id: Bech32ContractId = ContractId::from_str(&config.asset_id).unwrap().into();
-        tokens.insert(
-            config.symbol.clone(),
-            Token {
-                instance: TokenContract::new(contract_id, admin.clone()),
-                decimals: config.decimals,
-                asset_id: AssetId::from_str(&config.asset_id).unwrap(),
-                contract_id: ContractId::from_str(&config.asset_id).unwrap(),
-            },
-        );
-    }
-    let usdc = tokens.get("USDC").unwrap();
-    let uni = tokens.get("UNI").unwrap();
+    let id = ContractId::from_str(FACTORY_ADDRESS).unwrap();
+    let factory = TokenFactoryContract::new(id, admin.clone());
+
+    let assets = load_tokens("tests/artefacts/tokens.json").await;
+    let usdc = assets.get("USDC").unwrap();
+    let uni = assets.get("UNI").unwrap();
 
     let amount0 = 1000_000_000_u64; //1000 USDC
     let amount1 = 300_000_000_000_u64; //200 UNI
@@ -86,20 +61,19 @@ async fn fulfill_order_test() {
     println!("amount1 = {:?} UNI", amount1 / 1000_000_000);
 
     let price_decimals = 9;
-    let exp = (price_decimals + usdc.decimals - uni.decimals).into();
-    let price = amount1 * 10u64.pow(exp) / amount0;
-    println!("Price = {:?} UNI/USDC\n", price);
+    let exp = price_decimals + usdc.decimals - uni.decimals;
+    let price = amount1 * 10u64.pow(exp as u32) / amount0;
 
     let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     let initial_bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
     if initial_alice_usdc_balance < amount0 {
-        token_abi_calls::mint(&usdc.instance, amount0, alice_address)
+        token_factory_abi_calls::mint(&factory, alice_address, &usdc.symbol, amount0)
             .await
             .unwrap();
         println!("Alice minting {:?} USDC\n", amount0 / 1000_000);
     }
     if initial_bob_uni_balance < amount1 {
-        token_abi_calls::mint(&uni.instance, amount1, bob_address)
+        token_factory_abi_calls::mint(&factory, bob_address, &uni.symbol, amount1)
             .await
             .unwrap();
         println!("Bob minting {:?} UNI\n", amount1 / 1000_000_000);
@@ -108,13 +82,13 @@ async fn fulfill_order_test() {
     //--------------- PREDICATE ---------
 
     let configurables = LimitOrderPredicateConfigurables::new()
-        .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
-        .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
-        .set_ASSET0_DECIMALS(usdc.decimals)
-        .set_ASSET1_DECIMALS(uni.decimals)
-        .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
-        .set_PRICE(price)
-        .set_MIN_FULFILL_AMOUNT0(amount0);
+        .with_ASSET0(usdc.bits256)
+        .with_ASSET1(uni.bits256)
+        .with_ASSET0_DECIMALS(usdc.decimals as u8)
+        .with_ASSET1_DECIMALS(uni.decimals as u8)
+        .with_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .with_PRICE(price)
+        .with_MIN_FULFILL_AMOUNT0(amount0);
 
     let predicate: Predicate =
         Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
@@ -127,8 +101,8 @@ async fn fulfill_order_test() {
     //--------------- THE TEST ---------
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
-        asset_0: usdc.contract_id.into(),
-        asset_1: uni.contract_id.into(),
+        asset_0: usdc.bits256,
+        asset_1: uni.bits256,
         maker: alice_address,
         min_fulfill_amount_0: 1,
         price,
@@ -153,6 +127,9 @@ async fn fulfill_order_test() {
     assert!(predicate_usdc_balance >= amount0);
 
     println!("Alice transfers 1000 USDC to predicate\n");
+
+    println!("Alice balances = {:#?}", alice.get_balances().await);
+    println!("Predicate balances = {:#?}", predicate.get_balances().await);
 
     let _res = fulfill_order(
         &bob,

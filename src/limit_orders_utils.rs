@@ -136,7 +136,8 @@ pub mod limit_orders_interactions {
             Default::default(),
         )
         .with_inputs(inputs)
-        .with_outputs(outputs);
+        .with_outputs(outputs)
+        .tx_params(TxParameters::default().with_gas_price(1));
 
         script_call.call().await
     }
