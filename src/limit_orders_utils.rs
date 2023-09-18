@@ -13,7 +13,6 @@ pub mod limit_orders_interactions {
     use fuels::prelude::TxParameters;
     use fuels::programs::call_response::FuelCallResponse;
     use fuels::programs::script_calls::ScriptCallHandler;
-    use fuels::types::output::Output;
     use fuels::types::unresolved_bytes::UnresolvedBytes;
     use fuels::types::AssetId;
 
@@ -42,15 +41,6 @@ pub mod limit_orders_interactions {
         let mut outputs = vec![];
         let mut output_to_maker = wallet.get_asset_outputs_for_amount(wallet.address(), asset0, 0);
         outputs.append(&mut output_to_maker);
-
-        let base_asset = wallet
-            .get_asset_inputs_for_amount(AssetId::BASE, 10)
-            .await
-            .unwrap();
-        inputs.extend(base_asset);
-
-        let change = Output::change(wallet.address().into(), 0, AssetId::BASE);
-        outputs.push(change);
 
         let script_call = ScriptCallHandler::new(
             vec![],
@@ -118,15 +108,6 @@ pub mod limit_orders_interactions {
         //     )[0];
         //     outputs.push(partial_fulfill_output);
         // }
-
-        let base_asset = wallet
-            .get_asset_inputs_for_amount(AssetId::BASE, 10)
-            .await
-            .unwrap();
-        inputs.extend(base_asset);
-
-        let change = Output::change(wallet.address().into(), 0, AssetId::BASE);
-        outputs.push(change);
 
         let script_call = ScriptCallHandler::new(
             vec![],
