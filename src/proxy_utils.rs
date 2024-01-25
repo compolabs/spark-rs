@@ -1,7 +1,7 @@
 use fuels::programs::call_utils::TxDependencyExtension;
 use fuels::{
     accounts::wallet::WalletUnlocked,
-    prelude::{abigen, Bech32ContractId, Contract, LoadConfiguration, TxParameters},
+    prelude::{abigen, Bech32ContractId, Contract, LoadConfiguration, TxPolicies},
     types::ContractId,
 };
 use std::str::FromStr;
@@ -18,7 +18,7 @@ pub async fn deploy_proxy_contract(
     // let bin_path = "proxy-contract/out/debug/proxy-contract.bin";
     let id = Contract::load_from(bin_path, LoadConfiguration::default())
         .unwrap()
-        .deploy(wallet, TxParameters::default())
+        .deploy(wallet, TxPolicies::default())
         .await
         .unwrap();
     ProxyContract::new(id, wallet.clone())
@@ -46,13 +46,13 @@ pub mod proxy_abi_calls {
         amount: u64,
     ) -> Result<FuelCallResponse<()>, fuels::types::errors::Error> {
         let call_params = CallParameters::default()
-            .with_asset_id(AssetId::from(params.asset_0.0))
+            .with_asset_id(AssetId::from(params.asset_0))
             .with_amount(amount);
         instance
             .methods()
             .send_funds_to_predicate_root(params)
             .append_variable_outputs(1)
-            .tx_params(TxParameters::default().with_gas_price(1))
+            .with_tx_policies(TxPolicies::default().with_gas_price(1))
             .call_params(call_params)
             .unwrap()
             .call()

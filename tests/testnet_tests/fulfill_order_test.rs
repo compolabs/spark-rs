@@ -15,7 +15,6 @@ use spark_sdk::{
     },
     proxy_utils::ProxySendFundsToPredicateParams,
 };
-use src20_sdk::{token_abi_calls, TokenContract};
 
 use crate::utils::print_title;
 
@@ -29,7 +28,7 @@ pub struct Token {
     decimals: u8,
     asset_id: AssetId,
     contract_id: ContractId,
-    instance: TokenContract<WalletUnlocked>,
+    instance: TokenFactoryContract<WalletUnlocked>,
 }
 
 const RPC: &str = "beta-4.fuel.network";
@@ -68,7 +67,7 @@ async fn fulfill_order_test() {
         tokens.insert(
             config.symbol.clone(),
             Token {
-                instance: TokenContract::new(contract_id, admin.clone()),
+                instance: TokenFactoryContract::new(contract_id, admin.clone()),
                 decimals: config.decimals,
                 asset_id: AssetId::from_str(&config.asset_id).unwrap(),
                 contract_id: ContractId::from_str(&config.asset_id).unwrap(),
@@ -93,13 +92,13 @@ async fn fulfill_order_test() {
     let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
     let initial_bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
     if initial_alice_usdc_balance < amount0 {
-        token_abi_calls::mint(&usdc.instance, amount0, alice_address)
+        token_factory_abi_calls::mint(&usdc.instance, amount0, alice_address)
             .await
             .unwrap();
         println!("Alice minting {:?} USDC\n", amount0 / 1000_000);
     }
     if initial_bob_uni_balance < amount1 {
-        token_abi_calls::mint(&uni.instance, amount1, bob_address)
+        token_factory_abi_calls::mint(&uni.instance, amount1, bob_address)
             .await
             .unwrap();
         println!("Bob minting {:?} UNI\n", amount1 / 1000_000_000);

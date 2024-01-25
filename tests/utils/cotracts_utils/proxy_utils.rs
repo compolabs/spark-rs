@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use fuels::{
     accounts::wallet::WalletUnlocked,
-    prelude::{abigen, Bech32ContractId, Contract, LoadConfiguration, TxParameters},
+    prelude::{abigen, Bech32ContractId, Contract, LoadConfiguration, TxPolicies},
     types::ContractId,
 };
 
@@ -15,7 +15,7 @@ pub async fn deploy_proxy_contract(wallet: &WalletUnlocked) -> ProxyContract<Wal
     let path = "proxy-contract/out/debug/proxy-contract.bin";
     let id = Contract::load_from(path, LoadConfiguration::default())
         .unwrap()
-        .deploy(wallet, TxParameters::default())
+        .deploy(wallet, TxPolicies::default())
         .await
         .unwrap();
     ProxyContract::new(id, wallet.clone())
@@ -49,7 +49,7 @@ pub mod proxy_abi_calls {
             .methods()
             .send_funds_to_predicate_root(params)
             .append_variable_outputs(1)
-            .tx_params(TxParameters::default().set_gas_price(1))
+            .tx_params(TxPolicies::default().set_gas_price(1))
             .call_params(call_params)
             .unwrap()
             .call()

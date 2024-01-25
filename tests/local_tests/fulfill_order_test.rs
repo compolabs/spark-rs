@@ -8,21 +8,20 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
-use src20_sdk::{deploy_token_factory_contract, token_factory_abi_calls};
 
-use crate::utils::cotracts_utils::token_utils::deploy_tokens;
+use crate::utils::cotracts_utils::token_utils::{deploy_token_contract, Asset};
 use crate::utils::local_tests_utils::init_wallets;
 use crate::utils::print_title;
 
-// Alice wants to exchange 1000 USDC for 200 UNI
-// Bob wants to exchange 200 UNI for 1000 USDC
+// Alice wants to exchange 1000 USDC for 200 BTC
+// Bob wants to exchange 200 BTC for 1000 USDC
 /*
 inputs
     ResourcePredicate { resource: Coin { amount: 1000000000, asset_id: USDC, owner: Predicate, status: Unspent }}
-    ResourceSigned { resource: Coin { amount: 200000000000, asset_id: UNI, owner: Bob, status: Unspent }}
+    ResourceSigned { resource: Coin { amount: 200000000000, asset_id: BTC, owner: Bob, status: Unspent }}
 outputs
-    Coin { to: Alice, amount: 200000000000, asset_id: UNI }
-    Change { to: Bob, amount: 0, asset_id: UNI }
+    Coin { to: Alice, amount: 200000000000, asset_id: BTC }
+    Change { to: Bob, amount: 0, asset_id: BTC }
     Coin { to: Bob, amount: 1000000000, asset_id: USDC }
     Change { to: Predicate, amount: 0, asset_id: USDC }
  */
@@ -42,42 +41,35 @@ async fn fulfill_order_test() {
     println!("bob_address = 0x{:?}\n", bob_address);
 
     //--------------- TOKENS ---------------
-    let factory =
-        deploy_token_factory_contract(admin, "tests/artefacts/factory/token-factory.bin").await;
-    let assets = deploy_tokens(&factory, "tests/artefacts/tokens.json").await;
+    let token_contarct = deploy_token_contract(&admin).await;
+    let usdc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "USDC");
+    let btc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "BTC");
 
-    let usdc = assets.get("USDC").unwrap();
-    let uni = assets.get("UNI").unwrap();
-
-    let amount0 = 1_000_000_000; //1000 USDC
-    let amount1 = 200_000_000_000; // 200 UNI
+    let amount0 = 40_000_000_000; //40k USDC
+    let amount1 = 1_00_000_000; // 1 BTC
     println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id);
-    println!("UNI AssetId (asset1) = 0x{:?}", uni.asset_id);
+    println!("BTC AssetId (asset1) = 0x{:?}", btc.asset_id);
     println!("amount0 = {:?} USDC", amount0 / 1_000_000);
-    println!("amount1 = {:?} UNI", amount1 / 1_000_000_000);
+    println!("amount1 = {:?} BTC", amount1 / 1_00_000_000);
 
     let price_decimals = 9;
-    let exp = price_decimals + usdc.decimals - uni.decimals;
+    let exp = price_decimals + usdc.decimals - btc.decimals;
     let price = amount1 * 10u64.pow(exp as u32) / amount0;
-    println!("Price = {:?} UNI/USDC", price);
+    println!("Price = {:?} BTC/USDC", price);
 
-    token_factory_abi_calls::mint(&factory, alice_address, &usdc.symbol, amount0)
-        .await
-        .unwrap();
-    token_factory_abi_calls::mint(&factory, bob_address, &uni.symbol, amount1)
-        .await
-        .unwrap();
+    usdc.mint(alice_address, amount0).await.unwrap();
+    btc.mint(bob_address, amount1).await.unwrap();
 
     println!("Alice minting {:?} USDC", amount0 / 1_000_000);
-    println!("Bob minting {:?} UNI\n", amount1 / 1_000_000_000);
+    println!("Bob minting {:?} BTC\n", amount1 / 1_00_000_000);
 
     //--------------- PREDICATE ---------
 
     let configurables = LimitOrderPredicateConfigurables::new()
-        .with_ASSET0(usdc.bits256)
-        .with_ASSET1(uni.bits256)
+        .with_ASSET0(usdc.asset_id.into())
+        .with_ASSET1(btc.asset_id.into())
         .with_ASSET0_DECIMALS(usdc.decimals as u8)
-        .with_ASSET1_DECIMALS(uni.decimals as u8)
+        .with_ASSET1_DECIMALS(btc.decimals as u8)
         .with_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
         .with_PRICE(price)
         .with_MIN_FULFILL_AMOUNT0(amount0);
@@ -94,8 +86,8 @@ async fn fulfill_order_test() {
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
     let params = ProxySendFundsToPredicateParams {
         predicate_root: predicate.address().into(),
-        asset_0: usdc.bits256,
-        asset_1: uni.bits256,
+        asset_0: usdc.asset_id.into(),
+        asset_1: btc.asset_id.into(),
         maker: alice_address,
         min_fulfill_amount_0: 1,
         price,
@@ -112,8 +104,8 @@ async fn fulfill_order_test() {
         .unwrap();
 
     let initial_bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
-    let initial_bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
-    let initial_alice_uni_balance = alice.get_asset_balance(&uni.asset_id).await.unwrap();
+    let initial_bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();
+    let initial_alice_btc_balance = alice.get_asset_balance(&btc.asset_id).await.unwrap();
 
     // The predicate root has received the coin
     let predicate_usdc_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
@@ -127,29 +119,29 @@ async fn fulfill_order_test() {
         alice.address(),
         usdc.asset_id,
         amount0,
-        uni.asset_id,
+        btc.asset_id,
         amount1,
     )
     .await
     .unwrap();
 
-    println!("Bob transfers 200 UNI to predicate, thus closing the order\n");
+    println!("Bob transfers 200 BTC to predicate, thus closing the order\n");
 
     let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
-    let bob_uni_balance = bob.get_asset_balance(&uni.asset_id).await.unwrap();
+    let bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();
     let bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
-    let alice_uni_balance = alice.get_asset_balance(&uni.asset_id).await.unwrap();
+    let alice_btc_balance = alice.get_asset_balance(&btc.asset_id).await.unwrap();
 
     // The predicate root's coin has been spent
     assert_eq!(predicate_balance, 0);
 
     // Receiver has been paid `ask_amount`
-    assert_eq!(alice_uni_balance, initial_alice_uni_balance + amount1);
+    assert_eq!(alice_btc_balance, initial_alice_btc_balance + amount1);
 
     // Taker has sent `ask_amount` of the asked token and received `amount0` of the offered token in return
-    assert_eq!(bob_uni_balance, initial_bob_uni_balance - amount1);
+    assert_eq!(bob_btc_balance, initial_bob_btc_balance - amount1);
     assert_eq!(bob_usdc_balance, initial_bob_usdc_balance + amount0);
 
-    println!("Alice balance 200 UNI");
+    println!("Alice balance 200 BTC");
     println!("Bob balance 1000 USDC\n\n");
 }

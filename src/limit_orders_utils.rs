@@ -11,7 +11,7 @@ pub mod limit_orders_interactions {
     use fuels::accounts::wallet::WalletUnlocked;
     use fuels::prelude::Account;
     use fuels::prelude::Bech32Address;
-    use fuels::prelude::TxParameters;
+    use fuels::prelude::TxPolicies;
     use fuels::programs::call_response::FuelCallResponse;
     use fuels::programs::script_calls::ScriptCallHandler;
     use fuels::types::unresolved_bytes::UnresolvedBytes;
@@ -53,7 +53,7 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().with_gas_price(1));
+        .with_tx_policies(TxPolicies::default().with_gas_price(1));
 
         script_call.call().await
     }
@@ -120,7 +120,7 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().with_gas_price(1));
+        .with_tx_policies(TxPolicies::default().with_gas_price(1));
 
         script_call.call().await
     }

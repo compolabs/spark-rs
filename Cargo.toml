@@ -16,7 +16,7 @@ tokio = { version = "1.12", features = ["rt", "macros"] }
 
 [dependencies]
 dotenv = "0.15.0"
-src20_sdk = { git = "https://github.com/compolabs/src-20.git", branch = "token-factory" }
-fuels = { version = "0.47.0", features = ["fuel-core-lib"] }
+fuels = { version = "0.54.0", features = ["fuel-core-lib"] }
 serde = "1.0.163"
 serde_json = "1.0.96"
+rand = "0.8.5"
