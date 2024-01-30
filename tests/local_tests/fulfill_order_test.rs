@@ -10,7 +10,7 @@ use spark_sdk::limit_orders_utils::{
 use crate::utils::cotracts_utils::token_utils::{deploy_token_contract, Asset};
 use crate::utils::local_tests_utils::init_wallets;
 use crate::utils::print_title;
-
+//fixme update comment
 // Alice wants to exchange 1000 USDC for 200 BTC
 // Bob wants to exchange 200 BTC for 1000 USDC
 /*
@@ -43,23 +43,23 @@ async fn fulfill_order_test() {
     let usdc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "USDC");
     let btc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "BTC");
 
-    let amount0 = 40_000_000_000; //40k USDC
-    let amount1 = 1_00_000_000; // 1 BTC
+    let amount0 = usdc.parse_units(40_000_f64) as u64; //40k USDC
+    let amount1 = btc.parse_units(1_f64) as u64; // 1 BTC
     println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id);
     println!("BTC AssetId (asset1) = 0x{:?}", btc.asset_id);
-    println!("amount0 = {:?} USDC", amount0 / 1_000_000);
-    println!("amount1 = {:?} BTC", amount1 / 1_00_000_000);
+    println!("amount0 = {:?} USDC", usdc.format_units(amount0 as f64));
+    println!("amount1 = {:?} BTC", btc.format_units(amount1 as f64));
 
     let price_decimals = 9;
     let exp = price_decimals + usdc.decimals - btc.decimals;
     let price = amount1 * 10u64.pow(exp as u32) / amount0;
-    println!("Price = {:?} BTC/USDC", price);
+    println!("Price = {:?} BTC/USDC", price / 1_000_000_000);
 
     usdc.mint(alice_address, amount0).await.unwrap();
     btc.mint(bob_address, amount1).await.unwrap();
 
-    println!("Alice minting {:?} USDC", amount0 / 1_000_000);
-    println!("Bob minting {:?} BTC\n", amount1 / 1_00_000_000);
+    println!("Alice minting {:?} USDC", usdc.format_units(amount0 as f64));
+    println!("Bob minting {:?} BTC\n", btc.format_units(amount1 as f64));
 
     //--------------- PREDICATE ---------
 

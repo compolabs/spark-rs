@@ -2,10 +2,9 @@ predicate;
 mod utils;
 
 use std::u128::U128;
-use std::outputs::{Output, output_amount, output_count, output_type};
+use std::outputs::{Output, output_amount, output_count, output_type, output_asset_to};
 use std::inputs::{input_amount, input_asset_id, input_count, input_coin_owner};
 use std::constants::{ZERO_B256};
-use utils::{output_coin_to, verify_output_coin};
 
 configurable {
     ASSET0: b256 = ZERO_B256, // Asset that provides maker(Alice)
@@ -53,7 +52,6 @@ fn main() -> bool {
         Output::Coin => (),
         _ => revert(0),
     };
-    assert(verify_output_coin(0));
-    assert(output_coin_to(0) == MAKER.into());
+    assert(output_asset_to(0).unwrap() == MAKER.into());
     true
 }

@@ -26,12 +26,12 @@ async fn create_order_test() {
     let usdc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "USDC");
     let btc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "BTC");
 
-    let amount0 = 40_000_000_000; //40k USDC
-    let amount1 = 1_00_000_000; // 1 BTC
+    let amount0 = usdc.parse_units(40_000_f64) as u64; //40k USDC
+    let amount1 = btc.parse_units(1_f64) as u64; // 1 BTC
     println!("USDC AssetId (asset0) = 0x{:?}", usdc.asset_id);
     println!("BTC AssetId (asset1) = 0x{:?}", btc.asset_id);
-    println!("amount0 = {:?} USDC", amount0 / 1_000_000);
-    println!("amount1 = {:?} BTC", amount1 / 1_00_000_000);
+    println!("amount0 = {:?} USDC", usdc.format_units(amount0 as f64));
+    println!("amount1 = {:?} BTC", btc.format_units(amount1 as f64));
 
     let price_decimals = 9;
     let exp = price_decimals + usdc.decimals - btc.decimals;
@@ -39,7 +39,7 @@ async fn create_order_test() {
     println!("Price = {:?} BTC/USDC", price / 1_000_000_000);
 
     usdc.mint(alice_address, amount0).await.unwrap();
-    println!("Alice minting {:?} USDC", amount0 / 1_000_000);
+    println!("Alice minting {:?} USDC", usdc.format_units(amount0 as f64));
 
     //--------------- PREDICATE ---------
 
@@ -70,4 +70,5 @@ async fn create_order_test() {
 
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == 0);
     assert!(predicate.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
+    
 }
