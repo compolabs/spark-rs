@@ -35,8 +35,8 @@ async fn create_order_test() {
 
     let price_decimals = 9;
     let exp = price_decimals + usdc.decimals - btc.decimals;
-    let price = amount1 * 10u64.pow(exp as u32) / amount0;
-    println!("Price = {:?} BTC/USDC", price);
+    let price = amount0 * 10u64.pow(exp as u32) / amount1;
+    println!("Price = {:?} BTC/USDC", price / 1_000_000_000);
 
     usdc.mint(alice_address, amount0).await.unwrap();
     println!("Alice minting {:?} USDC", amount0 / 1_000_000);

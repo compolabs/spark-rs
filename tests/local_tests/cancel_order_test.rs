@@ -3,17 +3,14 @@ use crate::utils::{
     local_tests_utils::init_wallets,
     print_title,
 };
+use fuels::accounts::Account;
 use fuels::{
     accounts::predicate::Predicate,
     prelude::ViewOnlyAccount,
-    types::{Address, Bits256},
+    types::{transaction::TxPolicies, Address},
 };
-use spark_sdk::{
-    limit_orders_utils::{
-        limit_orders_interactions::{cancel_order, create_order},
-        LimitOrderPredicateConfigurables,
-    },
-    proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
+use spark_sdk::limit_orders_utils::{
+    limit_orders_interactions::cancel_order, LimitOrderPredicateConfigurables,
 };
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Alice canceled order
@@ -65,7 +62,7 @@ async fn cancel_order_test() {
         .with_ASSET1(btc.asset_id.into())
         .with_ASSET0_DECIMALS(usdc.decimals as u8)
         .with_ASSET1_DECIMALS(btc.decimals as u8)
-        .with_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
+        .with_MAKER(alice.address().into())
         .with_PRICE(price)
         .with_MIN_FULFILL_AMOUNT0(amount0);
 
@@ -79,27 +76,9 @@ async fn cancel_order_test() {
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
     // Alice transfer amount0 of  usdc.asset_id to the predicate root
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
-    let params = ProxySendFundsToPredicateParams {
-        predicate_root: predicate.address().into(),
-        asset_0: usdc.asset_id.into(),
-        asset_1: btc.asset_id.into(),
-        maker: alice_address,
-        min_fulfill_amount_0: 1,
-        price,
-        asset_0_decimals: 6,
-        asset_1_decimals: 9,
-        price_decimals: 9,
-    };
-
-    let proxy = deploy_proxy_contract(alice, "proxy-contract/out/debug/proxy-contract.bin").await;
-    let proxy_address = format!("0x{}", proxy.contract_id().hash);
-    println!("proxyAddress = {:?}", proxy_address);
-    println!("alice balance = {:#?}", alice.get_balances().await.unwrap());
-    println!(
-        "predicate balance = {:#?}",
-        predicate.get_balances().await.unwrap()
-    );
-    create_order(&alice, &proxy_address, params, amount0)
+    let policies = TxPolicies::default().with_gas_price(1);
+    alice
+        .transfer(predicate.address(), amount0, usdc.asset_id, policies)
         .await
         .unwrap();
     println!("alice balance = {:#?}", alice.get_balances().await.unwrap());

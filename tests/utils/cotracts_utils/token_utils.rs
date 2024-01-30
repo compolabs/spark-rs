@@ -1,4 +1,3 @@
-use fuels::accounts::fuel_crypto::coins_bip32::prelude::k256::sha2::{Digest, Sha256};
 use fuels::accounts::wallet::WalletUnlocked;
 use fuels::prelude::{abigen, Contract, LoadConfiguration, TxPolicies};
 use fuels::programs::call_response::FuelCallResponse;
@@ -6,6 +5,7 @@ use fuels::programs::call_utils::TxDependencyExtension;
 use fuels::types::{Address, AssetId, Bits256, ContractId, Identity};
 use rand::Rng;
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 abigen!(Contract(
     name = "TokenContract",
