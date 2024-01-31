@@ -12,6 +12,7 @@ use spark_sdk::{
 use crate::utils::local_tests_utils::{init_tokens, init_wallets};
 use crate::utils::print_title;
 
+// example of inputs and outputs
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Bob wants to exchange 200 UNI for 1000 USDC
 /*

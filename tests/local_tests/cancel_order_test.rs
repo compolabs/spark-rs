@@ -1,19 +1,13 @@
-use crate::utils::{
-    cotracts_utils::token_utils::{deploy_token_contract, Asset},
-    local_tests_utils::init_wallets,
-    print_title,
-};
-use fuels::accounts::Account;
-use fuels::{
-    accounts::predicate::Predicate,
-    prelude::ViewOnlyAccount,
-    types::{transaction::TxPolicies, Address},
-};
+use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
+use fuels::{accounts::predicate::Predicate, prelude::ViewOnlyAccount, types::Address};
+use spark_sdk::limit_orders_utils::limit_orders_interactions::create_order;
 use spark_sdk::limit_orders_utils::{
     limit_orders_interactions::cancel_order, LimitOrderPredicateConfigurables,
 };
+use spark_sdk::print_title;
+use spark_sdk::token_utils::{deploy_token_contract, Asset};
 
-//fixme update comment
+// example of inputs and outputs
 // Alice wants to exchange 1000 USDC for 200 UNI
 // Alice canceled order
 /*
@@ -27,7 +21,10 @@ outputs
 async fn cancel_order_test() {
     print_title("Cancel Order Test");
     //--------------- WALLETS ---------------
-    let wallets = init_wallets().await;
+    let config = WalletsConfig::new(Some(5), Some(1), Some(1_000_000_000));
+    let wallets = launch_custom_provider_and_get_wallets(config, None, None)
+        .await
+        .unwrap();
     let admin = &wallets[0];
     let alice = &wallets[1];
     let alice_address = Address::from(alice.address());
@@ -76,11 +73,11 @@ async fn cancel_order_test() {
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
     // Alice transfer amount0 of  usdc.asset_id to the predicate root
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
-    let policies = TxPolicies::default().with_gas_price(1);
-    alice
-        .transfer(predicate.address(), amount0, usdc.asset_id, policies)
+
+    create_order(alice, predicate.address(), usdc.asset_id, amount0)
         .await
         .unwrap();
+
     println!("alice balance = {:#?}", alice.get_balances().await.unwrap());
     println!(
         "predicate balance = {:#?}",

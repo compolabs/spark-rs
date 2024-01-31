@@ -1,21 +1,18 @@
-use fuels::{
-    accounts::{predicate::Predicate, Account},
-    prelude::ViewOnlyAccount,
-    types::{transaction::TxPolicies, Address},
-};
+use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
+use fuels::{accounts::predicate::Predicate, prelude::ViewOnlyAccount, types::Address};
+use spark_sdk::limit_orders_utils::limit_orders_interactions::create_order;
 use spark_sdk::limit_orders_utils::LimitOrderPredicateConfigurables;
-
-use crate::utils::{
-    cotracts_utils::token_utils::{deploy_token_contract, Asset},
-    local_tests_utils::init_wallets,
-    print_title,
-};
+use spark_sdk::print_title;
+use spark_sdk::token_utils::{deploy_token_contract, Asset};
 
 #[tokio::test]
 async fn create_order_test() {
     print_title("Create Order Test");
     //--------------- WALLETS ---------------
-    let wallets = init_wallets().await;
+    let config = WalletsConfig::new(Some(5), Some(1), Some(1_000_000_000));
+    let wallets = launch_custom_provider_and_get_wallets(config, None, None)
+        .await
+        .unwrap();
     let admin = &wallets[0];
     let alice = &wallets[1];
     let alice_address = Address::from(alice.address());
@@ -62,13 +59,10 @@ async fn create_order_test() {
     //--------------- THE TEST ---------
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
 
-    let policies = TxPolicies::default().with_gas_price(1);
-    alice
-        .transfer(predicate.address(), amount0, usdc.asset_id, policies)
+    create_order(alice, predicate.address(), usdc.asset_id, amount0)
         .await
         .unwrap();
 
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == 0);
     assert!(predicate.get_asset_balance(&usdc.asset_id).await.unwrap() == amount0);
-    
 }
