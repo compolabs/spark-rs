@@ -13,7 +13,9 @@ To cancel an order, the maker can spend the predicate coin in a transaction that
 Alice provides information about the price and tokens in this predicate. Additionally, Alice can send additional money to the same predicate root to increase the change amount.
 
 ### Spark Rust SDK
+
 Designed for seamless integration with CLOB Spark using the Rust programming language, the Spark Rust SDK offers the following functionality:
+
 ----------
 #### Getting Predicate Instance
 To create a predicate, you need to provide the following configurables:
