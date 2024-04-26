@@ -1,8 +1,6 @@
-Here's the translation of your text from Russian to English:
-
 # Specification for the Predicate Orderbook Indexer
 
-Before reading this document, you must read the README file to understand how the predicate orderbook is structured.
+Before reading this document, you must read the [README](https://github.com/compolabs/spark-rs/blob/master/README.md) file to understand how the predicate orderbook is structured.
 
 ### Data Retrieval
 Orders will be created using a proxy that will emit an event, which will store information about the order and the predicate root.
