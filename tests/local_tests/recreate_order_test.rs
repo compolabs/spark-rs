@@ -10,7 +10,6 @@ use spark_sdk::{
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
-use src20_sdk::{token_abi_calls, TokenContract};
 
 use crate::utils::{
     local_tests_utils::{init_tokens, init_wallets},

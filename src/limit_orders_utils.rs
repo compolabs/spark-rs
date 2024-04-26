@@ -11,15 +11,13 @@ pub mod limit_orders_interactions {
     use fuels::accounts::wallet::WalletUnlocked;
     use fuels::prelude::Account;
     use fuels::prelude::Bech32Address;
-    use fuels::prelude::TxParameters;
+    use fuels::prelude::TxPolicies;
     use fuels::programs::call_response::FuelCallResponse;
     use fuels::programs::script_calls::ScriptCallHandler;
+    use fuels::tx::Bytes32;
+    use fuels::tx::Receipt;
     use fuels::types::unresolved_bytes::UnresolvedBytes;
     use fuels::types::AssetId;
-
-    use crate::proxy_utils::proxy_abi_calls;
-    use crate::proxy_utils::proxy_instance_by_address;
-    use crate::proxy_utils::ProxySendFundsToPredicateParams;
 
     pub async fn cancel_order(
         wallet: &WalletUnlocked,
@@ -28,13 +26,13 @@ pub mod limit_orders_interactions {
         amount0: u64,
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let provider = wallet.provider().unwrap();
+        let mut predicate = predicate.clone();
+        predicate.set_provider(provider.clone());
 
         let mut inputs = vec![];
 
         let mut inputs_predicate = predicate
-            .clone()
-            .set_provider(provider.clone())
-            .get_asset_inputs_for_amount(asset0, amount0, None)
+            .get_asset_inputs_for_amount(asset0, amount0)
             .await
             .unwrap();
         inputs.append(&mut inputs_predicate);
@@ -53,33 +51,33 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().set_gas_price(1));
-        // println!("script_call = {:?}", script_call);
+        .with_tx_policies(TxPolicies::default().with_gas_price(1));
+
         script_call.call().await
     }
 
     pub async fn fulfill_order(
         wallet: &WalletUnlocked,
         predicate: &Predicate,
-        owner_address: &Bech32Address,
+        maker_address: &Bech32Address,
         asset0: AssetId,
         amount0: u64,
         asset1: AssetId,
         amount1: u64,
     ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
         let provider = wallet.provider().unwrap();
+        let mut predicate = predicate.clone();
+        predicate.set_provider(provider.clone());
 
         let mut inputs = vec![];
         // let balance = predicate.get_asset_balance(&asset0).await.unwrap_or(0);
         let mut inputs_predicate = predicate
-            .clone()
-            .set_provider(provider.clone())
-            .get_asset_inputs_for_amount(asset0, 1, None)
+            .get_asset_inputs_for_amount(asset0, 1)
             .await
             .unwrap();
         inputs.append(&mut inputs_predicate);
         let mut inputs_from_taker = wallet
-            .get_asset_inputs_for_amount(asset1, amount1, None)
+            .get_asset_inputs_for_amount(asset1, amount1)
             .await
             .unwrap();
         inputs.append(&mut inputs_from_taker);
@@ -87,7 +85,7 @@ pub mod limit_orders_interactions {
         // Output for the asked coin transferred from the taker to the receiver
         let mut outputs = vec![];
         let mut output_to_maker =
-            wallet.get_asset_outputs_for_amount(owner_address, asset1, amount1);
+            wallet.get_asset_outputs_for_amount(maker_address, asset1, amount1);
         outputs.append(&mut output_to_maker);
 
         // Output for the offered coin transferred from the predicate to the order taker
@@ -120,18 +118,20 @@ pub mod limit_orders_interactions {
         )
         .with_inputs(inputs)
         .with_outputs(outputs)
-        .tx_params(TxParameters::default().set_gas_price(1));
+        .with_tx_policies(TxPolicies::default().with_gas_price(1));
 
         script_call.call().await
     }
 
     pub async fn create_order(
         wallet: &WalletUnlocked,
-        proxy_address: &str,
-        params: ProxySendFundsToPredicateParams,
+        predicate_root: &Bech32Address,
+        asset_id: AssetId,
         amount: u64,
-    ) -> Result<FuelCallResponse<()>, fuels::prelude::Error> {
-        let proxy = proxy_instance_by_address(wallet, &proxy_address);
-        proxy_abi_calls::send_funds_to_predicate_root(&proxy, params, amount).await
+    ) -> Result<(Bytes32, Vec<Receipt>), fuels::prelude::Error> {
+        let policies = TxPolicies::default().with_gas_price(1);
+        wallet
+            .transfer(predicate_root, amount, asset_id, policies)
+            .await
     }
 }

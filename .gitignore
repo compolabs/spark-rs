@@ -1,7 +1,8 @@
 *target
 /Cargo.lock
 *.idea
-*.bin
+*/out/debug/*.bin
 *bin-root
 *storage_slots.json
 *.DS_Store
+.env

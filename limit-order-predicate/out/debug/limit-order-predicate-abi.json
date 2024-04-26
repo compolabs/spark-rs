@@ -14,12 +14,24 @@
     },
     {
       "typeId": 2,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
       "type": "u64",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 3,
+      "typeId": 4,
       "type": "u8",
       "components": null,
       "typeParameters": null
@@ -47,7 +59,7 @@
         "type": 0,
         "typeArguments": null
       },
-      "offset": 9548
+      "offset": 4420
     },
     {
       "name": "ASSET1",
@@ -56,61 +68,61 @@
         "type": 0,
         "typeArguments": null
       },
-      "offset": 9580
+      "offset": 4452
     },
     {
       "name": "MAKER",
       "configurableType": {
         "name": "",
-        "type": 0,
-        "typeArguments": null
+        "type": 2,
+        "typeArguments": []
       },
-      "offset": 9612
+      "offset": 4484
     },
     {
       "name": "PRICE",
       "configurableType": {
         "name": "",
-        "type": 2,
+        "type": 3,
         "typeArguments": null
       },
-      "offset": 9540
-    },
-    {
-      "name": "MIN_FULFILL_AMOUNT0",
-      "configurableType": {
-        "name": "",
-        "type": 2,
-        "typeArguments": null
-      },
-      "offset": 9644
+      "offset": 4412
     },
     {
       "name": "ASSET0_DECIMALS",
       "configurableType": {
         "name": "",
-        "type": 3,
+        "type": 4,
         "typeArguments": null
       },
-      "offset": 9476
+      "offset": 4340
     },
     {
       "name": "ASSET1_DECIMALS",
       "configurableType": {
         "name": "",
-        "type": 3,
+        "type": 4,
         "typeArguments": null
       },
-      "offset": 9484
+      "offset": 4348
     },
     {
       "name": "PRICE_DECIMALS",
       "configurableType": {
         "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 4332
+    },
+    {
+      "name": "MIN_FULFILL_AMOUNT0",
+      "configurableType": {
+        "name": "",
         "type": 3,
         "typeArguments": null
       },
-      "offset": 9468
+      "offset": 4524
     }
   ]
 }
