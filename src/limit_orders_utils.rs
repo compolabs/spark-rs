@@ -1,9 +1,28 @@
-use fuels::prelude::abigen;
+use std::{path::PathBuf, str::FromStr};
+use fuels::programs::call_utils::TxDependencyExtension;
 
-abigen!(Predicate(
-    name = "LimitOrderPredicate",
-    abi = "limit-order-predicate/out/debug/limit-order-predicate-abi.json"
-));
+use fuels::{
+    accounts::wallet::WalletUnlocked,
+    prelude::abigen,
+    programs::{
+        call_response::FuelCallResponse,
+        contract::{CallParameters, Contract, LoadConfiguration},
+    },
+    tx::AssetId,
+    types::{transaction::TxPolicies, Address, ContractId},
+};
+use rand::Rng;
+
+abigen!(
+    Predicate(
+        name = "LimitOrderPredicate",
+        abi = "limit-order-predicate/out/debug/limit-order-predicate-abi.json"
+    ),
+    Contract(
+        name = "ProxyContract",
+        abi = "proxy-contract/out/debug/proxy-contract-abi.json"
+    )
+);
 
 pub mod limit_orders_interactions {
 
@@ -133,5 +152,70 @@ pub mod limit_orders_interactions {
         wallet
             .transfer(predicate_root, amount, asset_id, policies)
             .await
+    }
+}
+
+pub struct Proxy {
+    pub instance: ProxyContract<WalletUnlocked>,
+}
+
+impl Proxy {
+    pub async fn create_order(
+        &self,
+        predicate_root: Address,
+        payment_asset: AssetId,
+        payment_size: u64,
+        base_price: u64,
+    ) -> Result<FuelCallResponse<()>, fuels::types::errors::Error> {
+        let call_params: CallParameters = CallParameters::default()
+            .with_asset_id(payment_asset)
+            .with_amount(payment_size);
+        self.instance
+            .methods()
+            .create_order(base_price, predicate_root, None)
+            .append_variable_outputs(1)
+            .call_params(call_params)
+            .unwrap()
+            .with_tx_policies(TxPolicies::default().with_gas_price(1))
+            .call()
+            .await
+    }
+
+    pub fn with_account(&self, account: &WalletUnlocked) -> Self {
+        Self {
+            instance: self.instance.with_account(account.clone()).unwrap(),
+        }
+    }
+
+    pub async fn new(wallet: &WalletUnlocked, contract_id: &str) -> Self {
+        let instance = ProxyContract::new(
+            &ContractId::from_str(contract_id).unwrap().into(),
+            wallet.clone(),
+        );
+        Proxy { instance }
+    }
+
+    pub async fn deploy(
+        wallet: &WalletUnlocked,
+        configurables: ProxyContractConfigurables,
+    ) -> Self {
+        let mut rng = rand::thread_rng();
+        let salt = rng.gen::<[u8; 32]>();
+
+        // let configurables = ProxyContractConfigurables::default();
+        let config = LoadConfiguration::default().with_configurables(configurables);
+
+        let bin_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("proxy-contract/out/debug/proxy-contract.bin");
+        let id = Contract::load_from(bin_path, config)
+            .unwrap()
+            .with_salt(salt)
+            .deploy(wallet, TxPolicies::default().with_gas_price(1))
+            .await
+            .unwrap();
+
+        let instance = ProxyContract::new(id, wallet.clone());
+
+        Self { instance }
     }
 }

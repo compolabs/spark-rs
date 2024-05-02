@@ -8,6 +8,11 @@ source = "member"
 dependencies = ["std"]
 
 [[package]]
+name = "proxy-contract"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
 name = "std"
 source = "git+https://github.com/fuellabs/sway?tag=v0.49.3#0dc6570377ee9c4a6359ade597fa27351e02a728"
 dependencies = ["core"]

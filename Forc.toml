@@ -1,0 +1,2 @@
+[workspace]
+members = ["limit-order-predicate", "proxy-contract"]

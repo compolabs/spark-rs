@@ -9,15 +9,16 @@ use fuels::{
 use spark_sdk::{
     constants::{RPC, TOKEN_CONTRACT_ID},
     limit_orders_utils::{
-        limit_orders_interactions::{create_order, fulfill_order},
-        LimitOrderPredicateConfigurables,
+        limit_orders_interactions::fulfill_order, CreateOrderEvent,
+        LimitOrderPredicateConfigurables, Proxy,
     },
     print_title,
-    token_utils::{Asset, TokenContract},
+    utils::get_contract_addresses,
 };
+use src20_sdk::token_utils::{Asset, TokenContract};
 
-// You want to buy 1 btc for 40k
-const AMOUNT_0: u64 = 40_000;
+// You want to buy 1 btc for 70k
+const AMOUNT_0: u64 = 70_000;
 const ASSET_0: &str = "USDC";
 
 const AMOUNT_1: u64 = 1; // BTC
@@ -45,12 +46,12 @@ async fn main() {
     println!("maker address = 0x{:?}\n", maker_address);
     println!("taker address = 0x{:?}\n", taker_address);
     //--------------- TOKENS ---------------
-    let token_contarct = TokenContract::new(
+    let token_contract = TokenContract::new(
         &ContractId::from_str(TOKEN_CONTRACT_ID).unwrap().into(),
         admin.clone(),
     );
-    let asset0 = Asset::new(admin.clone(), token_contarct.contract_id().into(), ASSET_0);
-    let asset1 = Asset::new(admin.clone(), token_contarct.contract_id().into(), ASSET_1);
+    let asset0 = Asset::new(admin.clone(), token_contract.contract_id().into(), ASSET_0);
+    let asset1 = Asset::new(admin.clone(), token_contract.contract_id().into(), ASSET_1);
 
     let amount0 = asset0.parse_units(AMOUNT_0 as f64) as u64;
     let amount1 = asset1.parse_units(AMOUNT_1 as f64) as u64;
@@ -60,12 +61,15 @@ async fn main() {
     let price_decimals = 9;
     let exp = price_decimals + asset0.decimals - asset1.decimals;
     let price = amount1 * 10u64.pow(exp as u32) / amount0;
-    println!("price = {:?} {ASSET_0}/{ASSET_1}", price / 1_000_000_000);
+    println!("price = {:?} {ASSET_0}/{ASSET_1}", price);
 
     asset0.mint(maker_address, amount0).await.unwrap();
     asset1.mint(taker_address, amount1).await.unwrap();
 
     //--------------- PREDICATE ---------
+    let contracts = get_contract_addresses();
+    let proxy = Proxy::new(&admin, &contracts.proxy).await;
+
     let configurables = LimitOrderPredicateConfigurables::new()
         .with_ASSET0(asset0.asset_id.into())
         .with_ASSET1(asset1.asset_id.into())
@@ -76,18 +80,23 @@ async fn main() {
         .with_MIN_FULFILL_AMOUNT0(amount0);
 
     let predicate: Predicate =
-        Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
+        Predicate::load_from("limit-order-predicate/out/debug/limit-order-predicate.bin")
             .unwrap()
             .with_configurables(configurables)
             .with_provider(admin.provider().unwrap().clone());
 
     println!("predicate root = {:?}\n", predicate.address());
 
-    let res = create_order(&maker, predicate.address(), asset0.asset_id, amount0)
+    let res = proxy
+        .with_account(&maker)
+        .create_order(predicate.address().into(), asset0.asset_id, amount0, price)
         .await
         .unwrap();
 
-    println!("create order tx: {}\n", res.0.to_string());
+    println!(
+        "create order tx: {:?}\n",
+        res.decode_logs_with_type::<CreateOrderEvent>().unwrap()
+    );
 
     let res = fulfill_order(
         &taker,

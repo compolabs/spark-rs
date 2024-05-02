@@ -1,11 +1,11 @@
 use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
 use fuels::{accounts::predicate::Predicate, prelude::ViewOnlyAccount, types::Address};
-use spark_sdk::limit_orders_utils::limit_orders_interactions::create_order;
 use spark_sdk::limit_orders_utils::{
     limit_orders_interactions::fulfill_order, LimitOrderPredicateConfigurables,
 };
+use spark_sdk::limit_orders_utils::{Proxy, ProxyContractConfigurables};
 use spark_sdk::print_title;
-use spark_sdk::token_utils::{deploy_token_contract, Asset};
+use src20_sdk::token_utils::{deploy_token_contract, Asset};
 
 // example of inputs and outputs
 // Alice wants to exchange 1000 USDC for 200 BTC
@@ -39,9 +39,9 @@ async fn fulfill_order_test() {
     println!("bob_address = 0x{:?}\n", bob_address);
 
     //--------------- TOKENS ---------------
-    let token_contarct = deploy_token_contract(&admin).await;
-    let usdc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "USDC");
-    let btc = Asset::new(admin.clone(), token_contarct.contract_id().into(), "BTC");
+    let token_contract = deploy_token_contract(&admin).await;
+    let usdc = Asset::new(admin.clone(), token_contract.contract_id().into(), "USDC");
+    let btc = Asset::new(admin.clone(), token_contract.contract_id().into(), "BTC");
 
     let amount0 = usdc.parse_units(40_000_f64) as u64; //40k USDC
     let amount1 = btc.parse_units(1_f64) as u64; // 1 BTC
@@ -62,6 +62,12 @@ async fn fulfill_order_test() {
     println!("Bob minting {:?} BTC\n", btc.format_units(amount1 as f64));
 
     //--------------- PREDICATE ---------
+    let proxy_configurables = ProxyContractConfigurables::default()
+        .with_BASE_ASSET(btc.asset_id)
+        .with_BASE_ASSET_DECIMALS(btc.decimals as u32)
+        .with_QUOTE_ASSET(usdc.asset_id)
+        .with_QUOTE_ASSET_DECIMALS(usdc.decimals as u32);
+    let proxy = Proxy::deploy(admin, proxy_configurables).await;
 
     let configurables = LimitOrderPredicateConfigurables::new()
         .with_ASSET0(usdc.asset_id.into())
@@ -81,7 +87,12 @@ async fn fulfill_order_test() {
 
     // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
     // Alice transfer amount0 of  usdc.asset_id to the predicate root
-    create_order(alice, predicate.address(), usdc.asset_id, amount0)
+    // create_order(alice, predicate.address(), usdc.asset_id, amount0)
+    //     .await
+    //     .unwrap();
+    proxy
+        .with_account(alice)
+        .create_order(predicate.address().into(), usdc.asset_id, amount0, price)
         .await
         .unwrap();
 
@@ -92,8 +103,6 @@ async fn fulfill_order_test() {
     // The predicate root has received the coin
     let predicate_usdc_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
     assert_eq!(predicate_usdc_balance, amount0);
-
-    println!("Alice transfers 1000 USDC to predicate\n");
 
     fulfill_order(
         &bob,
@@ -106,8 +115,6 @@ async fn fulfill_order_test() {
     )
     .await
     .unwrap();
-
-    println!("Bob transfers 200 BTC to predicate, thus closing the order\n");
 
     let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
     let bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();

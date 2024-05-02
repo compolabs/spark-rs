@@ -13,8 +13,8 @@ use spark_sdk::{
         LimitOrderPredicateConfigurables,
     },
     print_title,
-    token_utils::{Asset, TokenContract},
 };
+use src20_sdk::token_utils::{Asset, TokenContract};
 
 // You want to buy 1 btc for 40k
 const AMOUNT_0: u64 = 40_000;
@@ -40,12 +40,12 @@ async fn main() {
 
     println!("maker address = 0x{:?}\n", maker_address);
     //--------------- TOKENS ---------------
-    let token_contarct = TokenContract::new(
+    let token_contract = TokenContract::new(
         &ContractId::from_str(TOKEN_CONTRACT_ID).unwrap().into(),
         admin.clone(),
     );
-    let asset0 = Asset::new(admin.clone(), token_contarct.contract_id().into(), ASSET_0);
-    let asset1 = Asset::new(admin.clone(), token_contarct.contract_id().into(), ASSET_1);
+    let asset0 = Asset::new(admin.clone(), token_contract.contract_id().into(), ASSET_0);
+    let asset1 = Asset::new(admin.clone(), token_contract.contract_id().into(), ASSET_1);
 
     let amount0 = asset0.parse_units(AMOUNT_0 as f64) as u64;
     let amount1 = asset1.parse_units(AMOUNT_1 as f64) as u64;
