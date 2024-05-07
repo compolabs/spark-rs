@@ -43,7 +43,7 @@ let exp = (price_decimals + usdc_decimals - uni_decimals).into();
 let price = amount1 * 10u64.pow(exp) / amount0;
 println!("Order price: {:?} UNI/USDC", price);
 
-let configurables = LimitOrderPredicateConfigurables::new()
+let configurables = BuyPredicateConfigurables::new()
     .set_ASSET0(Bits256::from_hex_str(&usdc_asset_id.to_string()).unwrap())
     .set_ASSET1(Bits256::from_hex_str(&uni_asset_id.to_string()).unwrap())
     .set_ASSET0_DECIMALS(usdc_decimals)

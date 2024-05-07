@@ -3,17 +3,7 @@ name = "core"
 source = "path+from-root-566CA1D5F8BEAFBF"
 
 [[package]]
-name = "predicate-buy"
-source = "member"
-dependencies = ["std"]
-
-[[package]]
-name = "predicate-sell"
-source = "member"
-dependencies = ["std"]
-
-[[package]]
-name = "proxy-contract"
+name = "limit-order-predicate"
 source = "member"
 dependencies = ["std"]
 

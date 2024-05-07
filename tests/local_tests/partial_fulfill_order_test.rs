@@ -4,7 +4,7 @@ use fuels::types::{Address, Bits256};
 use spark_sdk::{
     limit_orders_utils::{
         limit_orders_interactions::{create_order, fulfill_order},
-        LimitOrderPredicateConfigurables,
+        BuyPredicateConfigurables,
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
@@ -83,7 +83,7 @@ async fn partial_fulfill_order_test() {
     let exp = 1_000_000;
     let price = amount1 * exp / amount0;
 
-    let configurables = LimitOrderPredicateConfigurables::new()
+    let configurables = BuyPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_MAKER(Bits256::from_hex_str(&alice.address().hash().to_string()).unwrap())
@@ -93,7 +93,7 @@ async fn partial_fulfill_order_test() {
         .set_MIN_FULFILL_AMOUNT0(amount0 / 2);
 
     let predicate: Predicate =
-        Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
+        Predicate::load_from("./predicate-buy/out/debug/predicate-buy.bin")
             .unwrap()
             .with_configurables(configurables)
             .with_provider(admin.provider().unwrap().clone());

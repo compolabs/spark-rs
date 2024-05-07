@@ -1,6 +1,5 @@
 use std::{path::PathBuf, str::FromStr};
 use fuels::programs::call_utils::TxDependencyExtension;
-
 use fuels::{
     accounts::wallet::WalletUnlocked,
     prelude::abigen,
@@ -15,8 +14,8 @@ use rand::Rng;
 
 abigen!(
     Predicate(
-        name = "LimitOrderPredicate",
-        abi = "limit-order-predicate/out/debug/limit-order-predicate-abi.json"
+        name = "BuyPredicate",
+        abi = "predicate-buy/out/debug/predicate-buy-abi.json"
     ),
     Contract(
         name = "ProxyContract",

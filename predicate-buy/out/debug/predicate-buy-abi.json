@@ -1,0 +1,128 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "u32",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [],
+      "name": "main",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": null
+    }
+  ],
+  "loggedTypes": [],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "QUOTE_ASSET",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 3924
+    },
+    {
+      "name": "BASE_ASSET",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 3956
+    },
+    {
+      "name": "MAKER",
+      "configurableType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      },
+      "offset": 3868
+    },
+    {
+      "name": "PRICE",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 3860
+    },
+    {
+      "name": "QUOTE_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 4012
+    },
+    {
+      "name": "BASE_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 3996
+    },
+    {
+      "name": "PRICE_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "offset": 3988
+    },
+    {
+      "name": "MIN_FULFILL_QUOTE_AMOUNT",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 4076
+    }
+  ]
+}

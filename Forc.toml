@@ -1,2 +1,2 @@
 [workspace]
-members = ["limit-order-predicate", "proxy-contract"]
+members = ["predicate-buy", "predicate-sell", "proxy-contract"]

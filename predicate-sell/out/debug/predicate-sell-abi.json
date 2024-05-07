@@ -53,22 +53,22 @@
   "messagesTypes": [],
   "configurables": [
     {
-      "name": "ASSET0",
-      "configurableType": {
-        "name": "",
-        "type": 0,
-        "typeArguments": null
-      },
-      "offset": 4420
-    },
-    {
-      "name": "ASSET1",
+      "name": "BASE_ASSET",
       "configurableType": {
         "name": "",
         "type": 0,
         "typeArguments": null
       },
       "offset": 4452
+    },
+    {
+      "name": "QUOTE_ASSET",
+      "configurableType": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "offset": 4420
     },
     {
       "name": "MAKER",
@@ -89,22 +89,22 @@
       "offset": 4412
     },
     {
-      "name": "ASSET0_DECIMALS",
-      "configurableType": {
-        "name": "",
-        "type": 4,
-        "typeArguments": null
-      },
-      "offset": 4340
-    },
-    {
-      "name": "ASSET1_DECIMALS",
+      "name": "QUOTE_DECIMALS",
       "configurableType": {
         "name": "",
         "type": 4,
         "typeArguments": null
       },
       "offset": 4348
+    },
+    {
+      "name": "BASE_DECIMALS",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 4340
     },
     {
       "name": "PRICE_DECIMALS",
@@ -116,7 +116,7 @@
       "offset": 4332
     },
     {
-      "name": "MIN_FULFILL_AMOUNT0",
+      "name": "MIN_FULFILL_QUOTE_AMOUNT",
       "configurableType": {
         "name": "",
         "type": 3,
