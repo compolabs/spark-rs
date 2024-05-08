@@ -2,14 +2,14 @@ use std::{env, str::FromStr};
 
 use dotenv::dotenv;
 use fuels::{
-    accounts::wallet::WalletUnlocked,
+    accounts::{wallet::WalletUnlocked, ViewOnlyAccount},
     prelude::Provider,
     types::{Address, ContractId},
 };
 use spark_sdk::{
     constants::{RPC, TOKEN_CONTRACT_ID},
-    spark_utils::{CreateOrderEvent, Spark},
     print_title,
+    spark_utils::{CreateOrderEvent, Spark},
     utils::get_contract_addresses,
 };
 use src20_sdk::token_utils::Asset;
@@ -23,7 +23,7 @@ const BASE_ASSET: &str = "BTC";
 
 #[tokio::main]
 async fn main() {
-    print_title("Fulfill Order script");
+    print_title("Fulfill Buy Order script");
     dotenv().ok();
 
     //--------------- WALLETS ---------------
@@ -55,8 +55,6 @@ async fn main() {
     let exp = price_decimals + base_asset.decimals - quote_asset.decimals;
     let price = (quote_amount as u128 * 10u128.pow(exp as u32) / base_amount as u128) as u64;
 
-    // println!("price = {:?} {QUOTE_ASSET}/{BASE_ASSET}", price / 1e9);
-
     quote_asset.mint(maker_address, quote_amount).await.unwrap();
     base_asset.mint(taker_address, base_amount).await.unwrap();
 
@@ -64,8 +62,18 @@ async fn main() {
     let contracts = get_contract_addresses();
     let spark = Spark::new(&admin, &contracts.proxy).await;
     let buy_predicate = spark.get_buy_predicate(&maker, &base_asset, &quote_asset, price, 1);
-
     let root = buy_predicate.address();
+
+    let initial_taker_btc_balance = taker.get_asset_balance(&base_asset.asset_id).await.unwrap();
+    let initial_taker_usdc_balance = taker
+        .get_asset_balance(&quote_asset.asset_id)
+        .await
+        .unwrap();
+    let initial_maker_btc_balance = maker.get_asset_balance(&base_asset.asset_id).await.unwrap();
+    let initial_maker_usdc_balance = maker
+        .get_asset_balance(&quote_asset.asset_id)
+        .await
+        .unwrap();
 
     let res = spark
         .with_account(&maker)
@@ -92,4 +100,25 @@ async fn main() {
         .unwrap();
 
     println!("fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
+
+    let taker_btc_balance = taker.get_asset_balance(&base_asset.asset_id).await.unwrap();
+    let taker_usdc_balance = taker
+        .get_asset_balance(&quote_asset.asset_id)
+        .await
+        .unwrap();
+    let maker_btc_balance = maker.get_asset_balance(&base_asset.asset_id).await.unwrap();
+    let maker_usdc_balance = maker
+        .get_asset_balance(&quote_asset.asset_id)
+        .await
+        .unwrap();
+    assert_eq!(taker_btc_balance, initial_taker_btc_balance - base_amount);
+    assert_eq!(
+        taker_usdc_balance,
+        initial_taker_usdc_balance + quote_amount
+    );
+    assert_eq!(maker_btc_balance, initial_maker_btc_balance + base_amount);
+    assert_eq!(
+        maker_usdc_balance,
+        initial_maker_usdc_balance - quote_amount
+    );
 }

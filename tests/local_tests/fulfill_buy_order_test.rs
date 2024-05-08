@@ -1,7 +1,7 @@
 use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
 use fuels::{prelude::ViewOnlyAccount, types::Address};
-use spark_sdk::spark_utils::Spark;
 use spark_sdk::print_title;
+use spark_sdk::spark_utils::Spark;
 use src20_sdk::token_utils::{deploy_token_contract, Asset};
 
 // example of inputs and outputs
@@ -18,8 +18,8 @@ outputs
     Change { to: Predicate, amount: 0, asset_id: USDC }
  */
 #[tokio::test]
-async fn fulfill_order_test() {
-    print_title("Fulfill Order Test");
+async fn fulfill_buy_order_test() {
+    print_title("Fulfill Buy Order Test");
     //--------------- WALLETS ---------------
     let config = WalletsConfig::new(Some(5), Some(1), Some(1_000_000_000));
     let wallets = launch_custom_provider_and_get_wallets(config, None, None)
@@ -43,28 +43,30 @@ async fn fulfill_order_test() {
 
     let exp = price_decimals + btc.decimals - usdc.decimals;
     let price = (quote_amount as u128 * 10u128.pow(exp as u32) / base_amount as u128) as u64;
-    println!("price = {:?}", price as f64 / 1e9);
 
     usdc.mint(alice_address, quote_amount).await.unwrap();
     btc.mint(bob_address, base_amount).await.unwrap();
 
+    //--------------- PREDICATE ---------
     let spark = Spark::deploy_proxy(admin, &btc, &usdc).await;
     let buy_predicate = spark.get_buy_predicate(alice, &btc, &usdc, price, 1);
+    let root = buy_predicate.address();
+
+    let initial_bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();
+    let initial_bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
+    let initial_alice_btc_balance = alice.get_asset_balance(&btc.asset_id).await.unwrap();
+    let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
+
+    assert_eq!(initial_bob_btc_balance, base_amount);
+    assert_eq!(initial_bob_usdc_balance, 0);
+    assert_eq!(initial_alice_btc_balance, 0);
+    assert_eq!(initial_alice_usdc_balance, quote_amount);
 
     spark
         .with_account(alice)
-        .create_order(
-            buy_predicate.address().into(),
-            usdc.asset_id,
-            quote_amount,
-            price,
-        )
+        .create_order(root.into(), usdc.asset_id, quote_amount, price)
         .await
         .unwrap();
-
-    let initial_bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
-    let initial_bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();
-    let initial_alice_btc_balance = alice.get_asset_balance(&btc.asset_id).await.unwrap();
 
     // The predicate root has received the coin
     let predicate_usdc_balance = buy_predicate
@@ -73,33 +75,32 @@ async fn fulfill_order_test() {
         .unwrap();
     assert_eq!(predicate_usdc_balance, quote_amount);
 
-    spark.fulfill_order(
-        &bob,
-        &buy_predicate,
-        alice.address(),
-        usdc.asset_id,
-        quote_amount,
-        btc.asset_id,
-        base_amount,
-    )
-    .await
-    .unwrap();
+    spark
+        .fulfill_order(
+            &bob,
+            &buy_predicate,
+            alice.address(),
+            usdc.asset_id,
+            quote_amount,
+            btc.asset_id,
+            base_amount,
+        )
+        .await
+        .unwrap();
 
     let predicate_balance = buy_predicate
         .get_asset_balance(&usdc.asset_id)
         .await
         .unwrap();
+
     let bob_btc_balance = bob.get_asset_balance(&btc.asset_id).await.unwrap();
     let bob_usdc_balance = bob.get_asset_balance(&usdc.asset_id).await.unwrap();
     let alice_btc_balance = alice.get_asset_balance(&btc.asset_id).await.unwrap();
+    let alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
 
-    // The predicate root's coin has been spent
+    assert_eq!(bob_btc_balance, 0);
+    assert_eq!(bob_usdc_balance, quote_amount);
+    assert_eq!(alice_btc_balance, base_amount);
+    assert_eq!(alice_usdc_balance, 0);
     assert_eq!(predicate_balance, 0);
-
-    // Receiver has been paid `ask_amount`
-    assert_eq!(alice_btc_balance, initial_alice_btc_balance + base_amount);
-
-    // Taker has sent `ask_amount` of the asked token and received `quote_amount` of the offered token in return
-    assert_eq!(bob_btc_balance, initial_bob_btc_balance - base_amount);
-    assert_eq!(bob_usdc_balance, initial_bob_usdc_balance + quote_amount);
 }

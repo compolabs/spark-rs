@@ -23,8 +23,12 @@ sha2 = "0.10.8"
 
 
 [[bin]]
-name = "fulfill_order"
-path = "scripts/fulfill_order.rs"
+name = "fulfill_buy_order"
+path = "scripts/fulfill_buy_order.rs"
+
+[[bin]]
+name = "fulfill_sell_order"
+path = "scripts/fulfill_sell_order.rs"
 
 [[bin]]
 name = "cancel_order"
