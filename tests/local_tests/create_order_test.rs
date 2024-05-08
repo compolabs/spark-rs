@@ -1,6 +1,6 @@
 use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
-use fuels::{accounts::predicate::Predicate, prelude::ViewOnlyAccount, types::Address};
-use spark_sdk::limit_orders_utils::{BuyPredicateConfigurables, Proxy, ProxyContractConfigurables};
+use fuels::{prelude::ViewOnlyAccount, types::Address};
+use spark_sdk::spark_utils::Spark;
 use spark_sdk::print_title;
 use src20_sdk::token_utils::{deploy_token_contract, Asset};
 
@@ -31,44 +31,18 @@ async fn create_order_test() {
     let price = (quote_amount as u128 * 10u128.pow(exp as u32) / base_amount as u128) as u64;
 
     usdc.mint(alice_address, quote_amount).await.unwrap();
-    println!(
-        "Alice minting {:?} USDC",
-        usdc.format_units(quote_amount as f64)
-    );
 
-    //--------------- PREDICATE ---------
-    let proxy_configurables = ProxyContractConfigurables::default()
-        .with_BASE_ASSET(btc.asset_id)
-        .with_BASE_ASSET_DECIMALS(btc.decimals as u32)
-        .with_QUOTE_ASSET(usdc.asset_id)
-        .with_QUOTE_ASSET_DECIMALS(usdc.decimals as u32);
-    let proxy = Proxy::deploy(admin, proxy_configurables).await;
-
-    let configurables = BuyPredicateConfigurables::new()
-        .with_QUOTE_ASSET(usdc.asset_id.into())
-        .with_BASE_ASSET(btc.asset_id.into())
-        .with_QUOTE_DECIMALS(usdc.decimals as u32)
-        .with_BASE_DECIMALS(btc.decimals as u32)
-        .with_MAKER(alice.address().into())
-        .with_PRICE(price)
-        .with_MIN_FULFILL_QUOTE_AMOUNT(quote_amount);
-
-    let predicate: Predicate = Predicate::load_from("./predicate-buy/out/debug/predicate-buy.bin")
-        .unwrap()
-        .with_configurables(configurables)
-        .with_provider(alice.provider().unwrap().clone());
-
-    println!("Predicate root = {:?}\n", predicate.address());
-    //--------------- THE TEST ---------
+    let spark = Spark::deploy_proxy(admin, &btc, &usdc).await;
+    let buy_predicate = spark.get_buy_predicate(alice, &btc, &usdc, price, 1);
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == quote_amount);
 
     // create_order(alice, predicate.address(), usdc.asset_id, quote_amount)
     //     .await
     //     .unwrap();
-    proxy
+    spark
         .with_account(alice)
         .create_order(
-            predicate.address().into(),
+            buy_predicate.address().into(),
             usdc.asset_id,
             quote_amount,
             price,
@@ -77,5 +51,9 @@ async fn create_order_test() {
         .unwrap();
 
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == 0);
-    assert!(predicate.get_asset_balance(&usdc.asset_id).await.unwrap() == quote_amount);
+    let predicate_balance = buy_predicate
+        .get_asset_balance(&usdc.asset_id)
+        .await
+        .unwrap();
+    assert!(predicate_balance == quote_amount);
 }

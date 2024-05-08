@@ -2,15 +2,13 @@ use std::{env, str::FromStr};
 
 use dotenv::dotenv;
 use fuels::{
-    accounts::{predicate::Predicate, wallet::WalletUnlocked},
+    accounts::wallet::WalletUnlocked,
     prelude::Provider,
     types::{Address, ContractId},
 };
 use spark_sdk::{
     constants::{RPC, TOKEN_CONTRACT_ID},
-    limit_orders_utils::{
-        limit_orders_interactions::cancel_order, BuyPredicateConfigurables, Proxy,
-    },
+    spark_utils::Spark,
     print_title,
     utils::get_contract_addresses,
 };
@@ -58,34 +56,25 @@ async fn main() {
 
     //--------------- PREDICATE ---------
     let contracts = get_contract_addresses();
-    let proxy = Proxy::new(&admin, &contracts.proxy).await;
+    let spark = Spark::new(&admin, &contracts.proxy).await;
 
-    let configurables = BuyPredicateConfigurables::new()
-        .with_QUOTE_ASSET(quote_asset.asset_id.into())
-        .with_BASE_ASSET(base_asset.asset_id.into())
-        .with_QUOTE_DECIMALS(quote_asset.decimals as u32)
-        .with_BASE_DECIMALS(base_asset.decimals as u32)
-        .with_MAKER(maker.address().into())
-        .with_PRICE(price)
-        .with_MIN_FULFILL_QUOTE_AMOUNT(quote_amount);
+    let buy_predicate = spark.get_buy_predicate(&maker, &base_asset, &quote_asset, price, 1);
 
-    let predicate: Predicate = Predicate::load_from("./predicate-buy/out/debug/predicate-buy.bin")
-        .unwrap()
-        .with_configurables(configurables)
-        .with_provider(admin.provider().unwrap().clone());
-
-    let root = predicate.address();
-    println!("predicate root = {:?}\n", root);
-
-    let res = proxy
+    let res = spark
         .with_account(&maker)
-        .create_order(root.into(), quote_asset.asset_id, quote_amount, price)
+        .create_order(
+            buy_predicate.address().into(),
+            quote_asset.asset_id,
+            quote_amount,
+            price,
+        )
         .await
         .unwrap();
 
     println!("create order tx: {}\n", res.tx_id.unwrap());
 
-    let res = cancel_order(&maker, &predicate, quote_asset.asset_id, quote_amount)
+    let res = spark
+        .cancel_order(&maker, &buy_predicate, quote_asset.asset_id, quote_amount)
         .await
         .unwrap();
 

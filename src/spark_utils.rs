@@ -1,21 +1,31 @@
-use std::{path::PathBuf, str::FromStr};
+use fuels::accounts::predicate::Predicate;
+use fuels::accounts::wallet::WalletUnlocked;
+use fuels::prelude::Account;
+use fuels::prelude::Bech32Address;
+use fuels::prelude::TxPolicies;
+use fuels::programs::call_response::FuelCallResponse;
 use fuels::programs::call_utils::TxDependencyExtension;
+use fuels::programs::script_calls::ScriptCallHandler;
+use fuels::types::unresolved_bytes::UnresolvedBytes;
+use fuels::types::Address;
+use fuels::types::AssetId;
+use fuels::types::ContractId;
 use fuels::{
-    accounts::wallet::WalletUnlocked,
     prelude::abigen,
-    programs::{
-        call_response::FuelCallResponse,
-        contract::{CallParameters, Contract, LoadConfiguration},
-    },
-    tx::AssetId,
-    types::{transaction::TxPolicies, Address, ContractId},
+    programs::contract::{CallParameters, Contract, LoadConfiguration},
 };
 use rand::Rng;
-
+use src20_sdk::token_utils::Asset;
+use std::path::PathBuf;
+use std::str::FromStr;
 abigen!(
     Predicate(
         name = "BuyPredicate",
         abi = "predicate-buy/out/debug/predicate-buy-abi.json"
+    ),
+    Predicate(
+        name = "SellPredicate",
+        abi = "predicate-sell/out/debug/predicate-sell-abi.json"
     ),
     Contract(
         name = "ProxyContract",
@@ -23,21 +33,62 @@ abigen!(
     )
 );
 
-pub mod limit_orders_interactions {
+const PROXY_BIN_PATH: &str = "proxy-contract/out/debug/proxy-contract.bin";
+const PREDICATE_BUY_BIN_PATH: &str = "predicate-buy/out/debug/predicate-buy.bin";
+const PREDICATE_SELL_BIN_PATH: &str = "predicate-sell/out/debug/predicate-sell.bin";
 
-    use fuels::accounts::predicate::Predicate;
-    use fuels::accounts::wallet::WalletUnlocked;
-    use fuels::prelude::Account;
-    use fuels::prelude::Bech32Address;
-    use fuels::prelude::TxPolicies;
-    use fuels::programs::call_response::FuelCallResponse;
-    use fuels::programs::script_calls::ScriptCallHandler;
-    use fuels::tx::Bytes32;
-    use fuels::tx::Receipt;
-    use fuels::types::unresolved_bytes::UnresolvedBytes;
-    use fuels::types::AssetId;
+pub struct Spark {
+    pub proxy: ProxyContract<WalletUnlocked>,
+}
+
+impl Spark {
+    pub fn get_buy_predicate(
+        &self,
+        wallet: &WalletUnlocked,
+        base_asset: &Asset,
+        quote_asset: &Asset,
+        price: u64,
+        min_fulfill_quote_amount: u64,
+    ) -> Predicate {
+        let configurables = BuyPredicateConfigurables::new()
+            .with_QUOTE_ASSET(quote_asset.asset_id.into())
+            .with_BASE_ASSET(base_asset.asset_id.into())
+            .with_QUOTE_DECIMALS(quote_asset.decimals as u32)
+            .with_BASE_DECIMALS(base_asset.decimals as u32)
+            .with_MAKER(wallet.address().into())
+            .with_PRICE(price)
+            .with_MIN_FULFILL_QUOTE_AMOUNT(min_fulfill_quote_amount);
+
+        Predicate::load_from(PREDICATE_BUY_BIN_PATH)
+            .unwrap()
+            .with_configurables(configurables)
+            .with_provider(wallet.provider().unwrap().clone())
+    }
+    pub fn get_sell_predicate(
+        &self,
+        wallet: &WalletUnlocked,
+        base_asset: &Asset,
+        quote_asset: &Asset,
+        price: u64,
+        min_fulfill_base_amount: u64,
+    ) -> Predicate {
+        let configurables = SellPredicateConfigurables::new()
+            .with_QUOTE_ASSET(quote_asset.asset_id.into())
+            .with_BASE_ASSET(base_asset.asset_id.into())
+            .with_QUOTE_DECIMALS(quote_asset.decimals as u32)
+            .with_BASE_DECIMALS(base_asset.decimals as u32)
+            .with_MAKER(wallet.address().into())
+            .with_PRICE(price)
+            .with_MIN_FULFILL_BASE_AMOUNT(min_fulfill_base_amount);
+
+        Predicate::load_from(PREDICATE_SELL_BIN_PATH)
+            .unwrap()
+            .with_configurables(configurables)
+            .with_provider(wallet.provider().unwrap().clone())
+    }
 
     pub async fn cancel_order(
+        &self,
         wallet: &WalletUnlocked,
         predicate: &Predicate,
         asset0: AssetId,
@@ -75,6 +126,7 @@ pub mod limit_orders_interactions {
     }
 
     pub async fn fulfill_order(
+        &self,
         wallet: &WalletUnlocked,
         predicate: &Predicate,
         maker_address: &Bech32Address,
@@ -142,24 +194,6 @@ pub mod limit_orders_interactions {
     }
 
     pub async fn create_order(
-        wallet: &WalletUnlocked,
-        predicate_root: &Bech32Address,
-        asset_id: AssetId,
-        amount: u64,
-    ) -> Result<(Bytes32, Vec<Receipt>), fuels::prelude::Error> {
-        let policies = TxPolicies::default().with_gas_price(1);
-        wallet
-            .transfer(predicate_root, amount, asset_id, policies)
-            .await
-    }
-}
-
-pub struct Proxy {
-    pub instance: ProxyContract<WalletUnlocked>,
-}
-
-impl Proxy {
-    pub async fn create_order(
         &self,
         predicate_root: Address,
         payment_asset: AssetId,
@@ -169,7 +203,7 @@ impl Proxy {
         let call_params: CallParameters = CallParameters::default()
             .with_asset_id(payment_asset)
             .with_amount(payment_size);
-        self.instance
+        self.proxy
             .methods()
             .create_order(base_price, predicate_root, None)
             .append_variable_outputs(1)
@@ -182,30 +216,34 @@ impl Proxy {
 
     pub fn with_account(&self, account: &WalletUnlocked) -> Self {
         Self {
-            instance: self.instance.with_account(account.clone()).unwrap(),
+            proxy: self.proxy.with_account(account.clone()).unwrap(),
         }
     }
 
     pub async fn new(wallet: &WalletUnlocked, contract_id: &str) -> Self {
-        let instance = ProxyContract::new(
+        let proxy = ProxyContract::new(
             &ContractId::from_str(contract_id).unwrap().into(),
             wallet.clone(),
         );
-        Proxy { instance }
+        Self { proxy }
     }
 
-    pub async fn deploy(
+    pub async fn deploy_proxy(
         wallet: &WalletUnlocked,
-        configurables: ProxyContractConfigurables,
+        base_asset: &Asset,
+        quote_asset: &Asset,
     ) -> Self {
         let mut rng = rand::thread_rng();
         let salt = rng.gen::<[u8; 32]>();
 
-        // let configurables = ProxyContractConfigurables::default();
-        let config = LoadConfiguration::default().with_configurables(configurables);
+        let proxy_configurables = ProxyContractConfigurables::default()
+            .with_BASE_ASSET(base_asset.asset_id)
+            .with_BASE_ASSET_DECIMALS(base_asset.decimals as u32)
+            .with_QUOTE_ASSET(quote_asset.asset_id)
+            .with_QUOTE_ASSET_DECIMALS(quote_asset.decimals as u32);
+        let config = LoadConfiguration::default().with_configurables(proxy_configurables);
 
-        let bin_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("proxy-contract/out/debug/proxy-contract.bin");
+        let bin_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(PROXY_BIN_PATH);
         let id = Contract::load_from(bin_path, config)
             .unwrap()
             .with_salt(salt)
@@ -213,8 +251,8 @@ impl Proxy {
             .await
             .unwrap();
 
-        let instance = ProxyContract::new(id, wallet.clone());
+        let proxy = ProxyContract::new(id, wallet.clone());
 
-        Self { instance }
+        Self { proxy }
     }
 }

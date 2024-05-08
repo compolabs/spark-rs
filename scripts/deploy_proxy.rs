@@ -4,7 +4,7 @@ use fuels::{
 };
 use spark_sdk::{
     constants::{RPC, TOKEN_CONTRACT_ID},
-    limit_orders_utils::{Proxy, ProxyContractConfigurables},
+    spark_utils::Spark,
     print_title,
     utils::{set_contract_addresses, ContractAddresses},
 };
@@ -44,18 +44,13 @@ async fn main() {
 
     let block = provider.latest_block_height().await.unwrap();
     println!("🏁 Start_block: {block}\n");
-    let configurables = ProxyContractConfigurables::default()
-        .with_BASE_ASSET(base_asset.asset_id)
-        .with_BASE_ASSET_DECIMALS(base_asset.decimals as u32)
-        .with_QUOTE_ASSET(quote_asset.asset_id)
-        .with_QUOTE_ASSET_DECIMALS(quote_asset.decimals as u32);
-    let proxy = Proxy::deploy(admin, configurables).await;
+    let spark = Spark::deploy_proxy(admin, &base_asset, &quote_asset).await;
 
     println!("Market = {:?} / {:?}", BASE_ASSET, QUOTE_ASSET);
-    println!("proxy = 0x{:?}", proxy.instance.contract_id().hash);
-    println!("proxy = {:?}\n", proxy.instance.contract_id().to_string());
+    println!("proxy = 0x{:?}", spark.proxy.contract_id().hash);
+    println!("proxy = {:?}\n", spark.proxy.contract_id().to_string());
 
     set_contract_addresses(ContractAddresses {
-        proxy: proxy.instance.contract_id().hash.to_string(),
+        proxy: spark.proxy.contract_id().hash.to_string(),
     });
 }

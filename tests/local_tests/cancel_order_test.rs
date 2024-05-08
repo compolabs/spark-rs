@@ -1,7 +1,6 @@
 use fuels::test_helpers::{launch_custom_provider_and_get_wallets, WalletsConfig};
-use fuels::{accounts::predicate::Predicate, prelude::ViewOnlyAccount, types::Address};
-use spark_sdk::limit_orders_utils::limit_orders_interactions::cancel_order;
-use spark_sdk::limit_orders_utils::{BuyPredicateConfigurables, Proxy, ProxyContractConfigurables};
+use fuels::{prelude::ViewOnlyAccount, types::Address};
+use spark_sdk::spark_utils::Spark;
 use spark_sdk::print_title;
 use src20_sdk::token_utils::{deploy_token_contract, Asset};
 
@@ -44,63 +43,29 @@ async fn cancel_order_test() {
     usdc.mint(alice_address, quote_amount).await.unwrap();
     let initial_alice_usdc_balance = alice.get_asset_balance(&usdc.asset_id).await.unwrap();
 
-    //--------------- PREDICATE ---------
-    let proxy_configurables = ProxyContractConfigurables::default()
-        .with_BASE_ASSET(btc.asset_id)
-        .with_BASE_ASSET_DECIMALS(btc.decimals as u32)
-        .with_QUOTE_ASSET(usdc.asset_id)
-        .with_QUOTE_ASSET_DECIMALS(usdc.decimals as u32);
-    let proxy = Proxy::deploy(admin, proxy_configurables).await;
-
-    let configurables = BuyPredicateConfigurables::new()
-        .with_QUOTE_ASSET(usdc.asset_id.into())
-        .with_BASE_ASSET(btc.asset_id.into())
-        .with_QUOTE_DECIMALS(usdc.decimals as u32)
-        .with_BASE_DECIMALS(btc.decimals as u32)
-        .with_MAKER(alice.address().into())
-        .with_PRICE(price)
-        .with_MIN_FULFILL_QUOTE_AMOUNT(quote_amount);
-
-    let predicate: Predicate = Predicate::load_from("./predicate-buy/out/debug/predicate-buy.bin")
-        .unwrap()
-        .with_configurables(configurables)
-        .with_provider(admin.provider().unwrap().clone());
-    println!("Predicate root = {:?}\n", predicate.address());
-
-    // ==================== ALICE CREATES THE ORDER (TRANSFER) ====================
-    // Alice transfer quote_amount of  usdc.asset_id to the predicate root
+    let spark = Spark::deploy_proxy(admin, &btc, &usdc).await;
+    let buy_predicate = spark.get_buy_predicate(alice, &btc, &usdc, price, 1);
     assert!(alice.get_asset_balance(&usdc.asset_id).await.unwrap() == quote_amount);
 
-    // create_order(alice, predicate.address(), usdc.asset_id, quote_amount)
-    //     .await
-    //     .unwrap();
-    proxy
+    spark
         .with_account(alice)
         .create_order(
-            predicate.address().into(),
+            buy_predicate.address().into(),
             usdc.asset_id,
             quote_amount,
             price,
         )
         .await
         .unwrap();
-    println!("alice balance = {:#?}", alice.get_balances().await.unwrap());
-    println!(
-        "predicate balance = {:#?}",
-        predicate.get_balances().await.unwrap()
-    );
 
-    cancel_order(&alice, &predicate, usdc.asset_id, quote_amount)
+    spark
+        .cancel_order(&alice, &buy_predicate, usdc.asset_id, quote_amount)
         .await
         .unwrap();
-    println!("alice balance = {:#?}", alice.get_balances().await.unwrap());
-    println!(
-        "predicate balance = {:#?}",
-        predicate.get_balances().await.unwrap()
-    );
-    println!("Alice canceles the order\n");
-    // The predicate root's coin has been spent
-    let predicate_balance = predicate.get_asset_balance(&usdc.asset_id).await.unwrap();
+    let predicate_balance = buy_predicate
+        .get_asset_balance(&usdc.asset_id)
+        .await
+        .unwrap();
     assert_eq!(predicate_balance, 0);
 
     // Wallet balance is the same as before it sent the coins to the predicate
