@@ -34,10 +34,6 @@ async fn fulfill_order_test() {
     let bob = wallets[2].clone();
     let bob_address = Address::from(bob.address());
 
-    println!("admin_address = 0x{:?}", Address::from(admin.address()));
-    println!("alice_address = 0x{:?}", alice_address);
-    println!("bob_address = 0x{:?}\n", bob_address);
-
     //--------------- TOKENS ---------------
     let token_contract = deploy_token_contract(&admin).await;
     let usdc = Asset::new(admin.clone(), token_contract.contract_id().into(), "USDC");
@@ -54,15 +50,6 @@ async fn fulfill_order_test() {
 
     usdc.mint(alice_address, quote_amount).await.unwrap();
     btc.mint(bob_address, base_amount).await.unwrap();
-
-    println!(
-        "Alice minting {:?} USDC",
-        usdc.format_units(quote_amount as f64)
-    );
-    println!(
-        "Bob minting {:?} BTC\n",
-        btc.format_units(base_amount as f64)
-    );
 
     //--------------- PREDICATE ---------
     let proxy_configurables = ProxyContractConfigurables::default()

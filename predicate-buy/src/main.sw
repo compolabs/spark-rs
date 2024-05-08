@@ -37,9 +37,6 @@ pub fn calc_price(base_amount: u64, quote_amount: u64) -> u64 {
 
 fn main() -> bool {
     assert(PRICE > 0 && MAKER.into() != ZERO_B256);
-    assert(input_asset_id(0).unwrap().into() == QUOTE_ASSET);
-    assert(output_asset_id(2).unwrap().into() == QUOTE_ASSET);
-    assert(output_asset_id(0).unwrap().into() == BASE_ASSET);
 
     let mut i = 0u8;
     let inputs: u8 = input_count();
@@ -49,16 +46,24 @@ fn main() -> bool {
         }
         i += 1u8;
     }
+    
+    assert(input_asset_id(0).unwrap().into() == QUOTE_ASSET);
+    assert(output_asset_id(2).unwrap().into() == QUOTE_ASSET);
+    assert(output_asset_id(0).unwrap().into() == BASE_ASSET);
+    
     let quote_output_amount = output_amount(2);
+
     let base_output_amount = output_amount(0);
+    let base_output_to = output_asset_to(0).unwrap();
+
+    let quote_input_amount = input_amount(0).unwrap();
     
     assert(calc_price(base_output_amount, quote_output_amount) == PRICE);
 
-    let asset0_balance = input_amount(0).unwrap();
-    let limit = if asset0_balance >= MIN_FULFILL_QUOTE_AMOUNT {
+    let limit = if quote_input_amount >= MIN_FULFILL_QUOTE_AMOUNT {
         MIN_FULFILL_QUOTE_AMOUNT
     } else {
-        asset0_balance
+        quote_input_amount
     };
     assert(quote_output_amount >= limit);
 
@@ -66,8 +71,6 @@ fn main() -> bool {
         Output::Coin => (),
         _ => revert(0),
     };
-    assert(output_asset_to(0).unwrap() == MAKER.into());
+    assert(base_output_to == MAKER.into());
     true
 }
-
-
