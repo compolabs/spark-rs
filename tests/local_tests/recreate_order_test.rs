@@ -6,7 +6,7 @@ use fuels::{
 use spark_sdk::{
     limit_orders_utils::{
         limit_orders_interactions::{cancel_order, create_order},
-        LimitOrderPredicateConfigurables,
+        BuyPredicateConfigurables,
     },
     proxy_utils::{deploy_proxy_contract, ProxySendFundsToPredicateParams},
 };
@@ -52,7 +52,7 @@ async fn recreate_order_test() {
 
     //--------------- PREDICATE ---------
 
-    let configurables = LimitOrderPredicateConfigurables::new()
+    let configurables = BuyPredicateConfigurables::new()
         .set_ASSET0(Bits256::from_hex_str(&usdc.asset_id.to_string()).unwrap())
         .set_ASSET1(Bits256::from_hex_str(&uni.asset_id.to_string()).unwrap())
         .set_ASSET0_DECIMALS(usdc.config.decimals)
@@ -61,7 +61,7 @@ async fn recreate_order_test() {
         .set_PRICE(price);
 
     let predicate: Predicate =
-        Predicate::load_from("./limit-order-predicate/out/debug/limit-order-predicate.bin")
+        Predicate::load_from("./predicate-buy/out/debug/predicate-buy.bin")
             .unwrap()
             .with_configurables(configurables)
             .with_provider(admin.provider().unwrap().clone());

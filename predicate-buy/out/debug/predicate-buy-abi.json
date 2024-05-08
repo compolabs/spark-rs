@@ -26,13 +26,13 @@
     },
     {
       "typeId": 3,
-      "type": "u64",
+      "type": "u32",
       "components": null,
       "typeParameters": null
     },
     {
       "typeId": 4,
-      "type": "u8",
+      "type": "u64",
       "components": null,
       "typeParameters": null
     }
@@ -53,22 +53,22 @@
   "messagesTypes": [],
   "configurables": [
     {
-      "name": "ASSET0",
+      "name": "QUOTE_ASSET",
       "configurableType": {
         "name": "",
         "type": 0,
         "typeArguments": null
       },
-      "offset": 4420
+      "offset": 3932
     },
     {
-      "name": "ASSET1",
+      "name": "BASE_ASSET",
       "configurableType": {
         "name": "",
         "type": 0,
         "typeArguments": null
       },
-      "offset": 4452
+      "offset": 3964
     },
     {
       "name": "MAKER",
@@ -77,52 +77,52 @@
         "type": 2,
         "typeArguments": []
       },
-      "offset": 4484
+      "offset": 3876
     },
     {
       "name": "PRICE",
       "configurableType": {
         "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 3868
+    },
+    {
+      "name": "QUOTE_DECIMALS",
+      "configurableType": {
+        "name": "",
         "type": 3,
         "typeArguments": null
       },
-      "offset": 4412
+      "offset": 4036
     },
     {
-      "name": "ASSET0_DECIMALS",
+      "name": "BASE_DECIMALS",
       "configurableType": {
         "name": "",
-        "type": 4,
+        "type": 3,
         "typeArguments": null
       },
-      "offset": 4340
-    },
-    {
-      "name": "ASSET1_DECIMALS",
-      "configurableType": {
-        "name": "",
-        "type": 4,
-        "typeArguments": null
-      },
-      "offset": 4348
+      "offset": 4020
     },
     {
       "name": "PRICE_DECIMALS",
       "configurableType": {
         "name": "",
-        "type": 4,
-        "typeArguments": null
-      },
-      "offset": 4332
-    },
-    {
-      "name": "MIN_FULFILL_AMOUNT0",
-      "configurableType": {
-        "name": "",
         "type": 3,
         "typeArguments": null
       },
-      "offset": 4524
+      "offset": 4012
+    },
+    {
+      "name": "MIN_FULFILL_QUOTE_AMOUNT",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 4100
     }
   ]
 }
