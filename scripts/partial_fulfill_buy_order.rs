@@ -1,4 +1,4 @@
-use std::{env, str::FromStr, time::Instant};
+use std::{env, str::FromStr};
 
 use dotenv::dotenv;
 use fuels::{
@@ -23,7 +23,7 @@ const BASE_ASSET: &str = "BTC";
 
 #[tokio::main]
 async fn main() {
-    print_title("Fulfill Buy Order script");
+    print_title("Partial fulfill Buy Order script");
     dotenv().ok();
 
     //--------------- WALLETS ---------------
@@ -75,35 +75,46 @@ async fn main() {
         .await
         .unwrap();
 
-    let start = Instant::now();
     let res = spark
         .with_account(&maker)
         .create_order(root.into(), quote_asset.asset_id, quote_amount, price)
         .await
         .unwrap();
-    println!("Create order tx = {:?}", start.elapsed());
-    
+
     println!(
         "create order event: {:#?}\n",
         res.decode_logs_with_type::<CreateOrderEvent>().unwrap()
     );
 
-    let start = Instant::now();
     let res = spark
         .fulfill_order(
             &taker,
             &buy_predicate,
             maker.address(),
             quote_asset.asset_id,
-            quote_amount,
+            quote_amount * 3 / 4,
             base_asset.asset_id,
-            base_amount,
+            base_amount * 3 / 4,
         )
         .await
         .unwrap();
-    println!("Fulfill order tx = {:?}", start.elapsed());
 
-    println!("fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
+    println!("3/4 fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
+
+    let res = spark
+        .fulfill_order(
+            &taker,
+            &buy_predicate,
+            maker.address(),
+            quote_asset.asset_id,
+            quote_amount / 4,
+            base_asset.asset_id,
+            base_amount / 4,
+        )
+        .await
+        .unwrap();
+
+    println!("1/4 fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
 
     let taker_btc_balance = taker.get_asset_balance(&base_asset.asset_id).await.unwrap();
     let taker_usdc_balance = taker

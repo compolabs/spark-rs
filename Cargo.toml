@@ -31,6 +31,14 @@ name = "fulfill_sell_order"
 path = "scripts/fulfill_sell_order.rs"
 
 [[bin]]
+name = "partial_fulfill_buy_order"
+path = "scripts/partial_fulfill_buy_order.rs"
+
+[[bin]]
+name = "partial_fulfill_sell_order"
+path = "scripts/partial_fulfill_sell_order.rs"
+
+[[bin]]
 name = "cancel_order"
 path = "scripts/cancel_order.rs"
 

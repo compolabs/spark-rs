@@ -1,4 +1,4 @@
-use std::{env, str::FromStr, time::Instant};
+use std::{env, str::FromStr};
 
 use dotenv::dotenv;
 use fuels::{
@@ -23,7 +23,7 @@ const BASE_ASSET: &str = "BTC";
 
 #[tokio::main]
 async fn main() {
-    print_title("Fulfill Buy Order script");
+    print_title("Partial fulfill Sell Order script");
     dotenv().ok();
 
     //--------------- WALLETS ---------------
@@ -55,14 +55,14 @@ async fn main() {
     let exp = price_decimals + base_asset.decimals - quote_asset.decimals;
     let price = (quote_amount as u128 * 10u128.pow(exp as u32) / base_amount as u128) as u64;
 
-    quote_asset.mint(maker_address, quote_amount).await.unwrap();
-    base_asset.mint(taker_address, base_amount).await.unwrap();
+    base_asset.mint(maker_address, base_amount).await.unwrap();
+    quote_asset.mint(taker_address, quote_amount).await.unwrap();
 
     //--------------- PREDICATE ---------
     let contracts = get_contract_addresses();
     let spark = Spark::new(&admin, &contracts.proxy).await;
-    let buy_predicate = spark.get_buy_predicate(&maker, &base_asset, &quote_asset, price, 1);
-    let root = buy_predicate.address();
+    let sell_predicate = spark.get_sell_predicate(&maker, &base_asset, &quote_asset, price, 1);
+    let root = sell_predicate.address();
 
     let initial_taker_btc_balance = taker.get_asset_balance(&base_asset.asset_id).await.unwrap();
     let initial_taker_usdc_balance = taker
@@ -75,35 +75,46 @@ async fn main() {
         .await
         .unwrap();
 
-    let start = Instant::now();
     let res = spark
         .with_account(&maker)
-        .create_order(root.into(), quote_asset.asset_id, quote_amount, price)
+        .create_order(root.into(), base_asset.asset_id, base_amount, price)
         .await
         .unwrap();
-    println!("Create order tx = {:?}", start.elapsed());
-    
+
     println!(
         "create order event: {:#?}\n",
         res.decode_logs_with_type::<CreateOrderEvent>().unwrap()
     );
 
-    let start = Instant::now();
     let res = spark
         .fulfill_order(
             &taker,
-            &buy_predicate,
+            &sell_predicate,
             maker.address(),
-            quote_asset.asset_id,
-            quote_amount,
             base_asset.asset_id,
-            base_amount,
+            base_amount * 3 / 4,
+            quote_asset.asset_id,
+            quote_amount * 3 / 4,
         )
         .await
         .unwrap();
-    println!("Fulfill order tx = {:?}", start.elapsed());
 
-    println!("fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
+    println!("3/4 fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
+
+    let res = spark
+        .fulfill_order(
+            &taker,
+            &sell_predicate,
+            maker.address(),
+            base_asset.asset_id,
+            base_amount / 4,
+            quote_asset.asset_id,
+            quote_amount / 4,
+        )
+        .await
+        .unwrap();
+
+    println!("1/4 fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
 
     let taker_btc_balance = taker.get_asset_balance(&base_asset.asset_id).await.unwrap();
     let taker_usdc_balance = taker
@@ -115,14 +126,14 @@ async fn main() {
         .get_asset_balance(&quote_asset.asset_id)
         .await
         .unwrap();
-    assert_eq!(taker_btc_balance, initial_taker_btc_balance - base_amount);
+    assert_eq!(taker_btc_balance, initial_taker_btc_balance + base_amount);
     assert_eq!(
         taker_usdc_balance,
-        initial_taker_usdc_balance + quote_amount
+        initial_taker_usdc_balance - quote_amount
     );
-    assert_eq!(maker_btc_balance, initial_maker_btc_balance + base_amount);
+    assert_eq!(maker_btc_balance, initial_maker_btc_balance - base_amount);
     assert_eq!(
         maker_usdc_balance,
-        initial_maker_usdc_balance - quote_amount
+        initial_maker_usdc_balance + quote_amount
     );
 }

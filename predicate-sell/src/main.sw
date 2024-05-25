@@ -29,12 +29,6 @@ impl u64 {
     }
 }
 
-pub fn calc_price(base_amount: u64, quote_amount: u64) -> u64 {
-    let exp = PRICE_DECIMALS + BASE_DECIMALS - QUOTE_DECIMALS;
-    quote_amount.mul_div(10.pow(exp), base_amount)
-}
-
-
 fn main() -> bool {
     assert(PRICE > 0 && MAKER.into() != ZERO_B256);
 
@@ -58,7 +52,7 @@ fn main() -> bool {
     
     let base_input_amount = input_amount(0).unwrap();
     
-    assert(calc_price(base_output_amount, quote_output_amount) == PRICE);
+    assert(quote_to_base_amount(quote_output_amount, PRICE) == base_output_amount);
 
     let limit = if base_input_amount >= MIN_FULFILL_BASE_AMOUNT {
         MIN_FULFILL_BASE_AMOUNT
@@ -73,4 +67,13 @@ fn main() -> bool {
     };
     assert(quote_output_to == MAKER.into());
     true
+}
+
+
+fn quote_to_base_amount(amount: u64, price: u64) -> u64 {
+    amount.mul_div(
+        10_u64
+            .pow(BASE_DECIMALS + PRICE_DECIMALS - QUOTE_DECIMALS),
+        price,
+    )
 }
