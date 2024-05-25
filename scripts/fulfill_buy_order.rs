@@ -1,4 +1,4 @@
-use std::{env, str::FromStr};
+use std::{env, str::FromStr, time::Instant};
 
 use dotenv::dotenv;
 use fuels::{
@@ -75,17 +75,20 @@ async fn main() {
         .await
         .unwrap();
 
+    let start = Instant::now();
     let res = spark
         .with_account(&maker)
         .create_order(root.into(), quote_asset.asset_id, quote_amount, price)
         .await
         .unwrap();
-
+    println!("Create order tx = {:?}", start.elapsed());
+    
     println!(
         "create order event: {:#?}\n",
         res.decode_logs_with_type::<CreateOrderEvent>().unwrap()
     );
 
+    let start = Instant::now();
     let res = spark
         .fulfill_order(
             &taker,
@@ -98,6 +101,7 @@ async fn main() {
         )
         .await
         .unwrap();
+    println!("Fulfill order tx = {:?}", start.elapsed());
 
     println!("fulfill order tx: {}\n", res.tx_id.unwrap().to_string());
 
